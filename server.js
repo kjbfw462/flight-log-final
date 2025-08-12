@@ -65,7 +65,6 @@ const startServer = async () => {
                 res.json({ data: result.rows });
             } catch (err) { res.status(500).json({ error: '飛行日誌の取得に失敗しました。' }); }
         });
-        // ★★★ ここから追加 ★★★
         app.get('/api/flight_logs/:id/?', isAuthenticated, async (req, res) => {
             try {
                 const result = await db.query('SELECT * FROM flight_logs WHERE id = $1 AND pilot_id = $2', [req.params.id, req.session.user.id]);
@@ -73,13 +72,13 @@ const startServer = async () => {
                 res.json({ data: result.rows[0] });
             } catch (err) { res.status(500).json({ error: '日誌の取得に失敗しました。' }); }
         });
-        // ★★★ ここまで追加 ★★★
         app.delete('/api/flight_logs/:id/?', isAuthenticated, async (req, res) => {
             try {
                 const result = await db.query('DELETE FROM flight_logs WHERE id = $1 AND pilot_id = $2', [req.params.id, req.session.user.id]);
                 if (result.rowCount === 0) return res.status(404).json({ error: '削除対象のデータが見つからないか、権限がありません。' });
                 res.status(204).send();
-            } catch (err) { console.error('Flight log delete error:', err); res.status(500).json({ error: '削除に失敗しました。' });}
+            } catch (err) { console.error('Flight log delete error:', err); res.status(500).json({ error: '削除に失敗しました。'});
+            }
         });
 
         // --- Drone APIs ---
@@ -89,7 +88,6 @@ const startServer = async () => {
                 res.json({ data: result.rows });
             } catch (err) { res.status(500).json({ error: '機体情報の取得に失敗しました。' }); }
         });
-        // ★★★ ここから追加 ★★★
         app.get('/api/drones/:id/?', isAuthenticated, async (req, res) => {
             try {
                 const result = await db.query('SELECT * FROM drones WHERE id = $1 AND pilot_id = $2', [req.params.id, req.session.user.id]);
@@ -97,7 +95,6 @@ const startServer = async () => {
                 res.json({ data: result.rows[0] });
             } catch (err) { res.status(500).json({ error: '機体情報の取得に失敗しました。' }); }
         });
-        // ★★★ ここまで追加 ★★★
         app.delete('/api/drones/:id/?', isAuthenticated, async (req, res) => {
             try {
                 const logCheck = await db.query('SELECT 1 FROM flight_logs WHERE drone_id = $1 AND pilot_id = $2 LIMIT 1', [req.params.id, req.session.user.id]);
@@ -115,6 +112,18 @@ const startServer = async () => {
                 res.json({ data: result.rows });
             } catch (err) { console.error('Pilot list fetch error:', err); res.status(500).json({ error: '操縦者一覧の取得に失敗しました。' }); }
         });
+        // ★★★ ここから追加 ★★★
+        app.get('/api/pilots/:id/?', isAuthenticated, async (req, res) => {
+            try {
+                const pilotRes = await db.query("SELECT id, name, name_kana, email, phone, postal_code, prefecture, address1, address2, has_license, initial_flight_minutes FROM pilots WHERE id = $1", [req.params.id]);
+                if (pilotRes.rows.length === 0) return res.status(404).json({ error: '操縦者が見つかりません。' });
+                const pilot = pilotRes.rows[0];
+                const timeRes = await db.query('SELECT SUM(actual_time_minutes) as app_flight_minutes FROM flight_logs WHERE pilot_id = $1', [req.params.id]);
+                pilot.app_flight_minutes = parseInt(timeRes.rows[0].app_flight_minutes || 0, 10);
+                res.json({ data: pilot });
+            } catch (err) { console.error('Pilot detail fetch error:', err); res.status(500).json({ error: '操縦者情報の取得に失敗しました。' }); }
+        });
+        // ★★★ ここまで追加 ★★★
         app.delete('/api/pilots/:id/?', isAuthenticated, async (req, res) => {
             const pilotIdToDelete = parseInt(req.params.id, 10);
             const currentUserId = req.session.user.id;
