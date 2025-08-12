@@ -9,18 +9,19 @@
     <style>
         .red-btn { display: inline-block; background: #e95252; color: white; border: none; padding: 0.8em 1.5em; border-radius: 8px; cursor: pointer; text-decoration: none; text-align: center; margin-top: 1em; width: 100%; box-sizing: border-box; }
         .red-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .req { color: #e95252; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container" style="padding-top: 50px;">
         <a href="/pilots.html" class="back-link">&lt; 操縦者一覧に戻る</a>
-        <h1 id="page-title">操縦者情報の編集</h1>
+        <h1 id="page-title">操縦者情報</h1>
         <form id="pilot-form">
             <input type="hidden" name="id">
             <h3>基本情報</h3>
-            <label>氏名 <input type="text" name="name" required></label>
+            <label>氏名 <span class="req">*</span><input type="text" name="name" required></label>
             <label>氏名（カナ）<input type="text" name="name_kana"></label>
-            <label>メールアドレス (ログインID) <input type="email" name="email" required></label>
+            <label>メールアドレス (ログインID) <span class="req">*</span><input type="email" name="email" required></label>
             <label>電話番号<input type="tel" name="phone"></label>
             <label>郵便番号<input type="text" name="postal_code"></label>
             <label>都道府県<input type="text" name="prefecture"></label>
@@ -30,10 +31,10 @@
 
             <h3>パスワード</h3>
             <label>パスワード <span id="password-note"></span>
-                <input type="password" name="password" id="password" autocomplete="new-password" placeholder="変更する場合のみ入力">
+                <input type="password" name="password" id="password" autocomplete="new-password">
             </label>
              <label>パスワード（確認用）
-                <input type="password" id="password_confirm" autocomplete="new-password" placeholder="変更する場合のみ入力">
+                <input type="password" id="password_confirm" autocomplete="new-password">
             </label>
 
             <h3>飛行時間サマリー</h3>
@@ -44,7 +45,7 @@
 
             <button type="submit" style="margin-top: 1em;">この内容で保存</button>
         </form>
-        <button type="button" id="delete-button" class="red-btn" style="display: none;">削除する</button>
+        <button type="button" id="delete-button" class="red-btn" style="display: none;">この操縦者を削除する</button>
     </div>
     <script>
         const form = document.getElementById('pilot-form');
@@ -79,10 +80,7 @@
         };
 
         window.addEventListener('load', async () => {
-            const initialFlightTimeInput = document.getElementById('initial_flight_time_str');
-            if (initialFlightTimeInput) {
-                initialFlightTimeInput.addEventListener('input', updateTotalDisplay);
-            }
+            document.getElementById('initial_flight_time_str').addEventListener('input', updateTotalDisplay);
             
             try {
                 const userRes = await fetch('/api/current-user');
@@ -92,8 +90,10 @@
 
             if (pilotId) {
                 pageTitle.textContent = '操縦者情報の編集';
-                document.getElementById('password-note').textContent = '変更する場合のみ入力';
+                document.getElementById('password').placeholder = '変更する場合のみ入力';
+                document.getElementById('password_confirm').placeholder = '変更する場合のみ入力';
                 deleteButton.style.display = 'block';
+
                 if (parseInt(pilotId, 10) === currentUserId) {
                     deleteButton.disabled = true;
                     deleteButton.title = '自分自身は削除できません';
@@ -117,17 +117,41 @@
                     updateTotalDisplay();
                 } catch (err) { alert(err.message); }
             } else {
-                // ★★★ ここが修正箇所 ★★★
                 pageTitle.textContent = '新規操縦者の登録';
-                form.innerHTML = '<p>新規操縦者の登録は、右上のログアウトボタンからログアウトし、ログイン画面から新規登録を行ってください。</p><p><a href="/pilots.html">操縦者一覧に戻る</a></p>';
+                document.getElementById('password').required = true;
+                document.getElementById('password_confirm').required = true;
+                document.getElementById('password-note').innerHTML = '<span class="req">*</span>';
                 deleteButton.style.display = 'none';
             }
         });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!pilotId) return; // IDがなければ何もしない
-            // ... (以降の保存処理は変更なし)
+            const password = form.elements.password.value;
+            const passwordConfirm = document.getElementById('password_confirm').value;
+            if (password !== passwordConfirm) {
+                return alert('パスワードと確認用のパスワードが一致しません。');
+            }
+            document.getElementById('initial_flight_minutes').value = parseTimeToMinutes(document.getElementById('initial_flight_time_str').value);
+            const data = Object.fromEntries(new FormData(e.target).entries());
+            data.has_license = form.elements.has_license.checked;
+            if (!data.password && pilotId) {
+                delete data.password;
+            }
+            
+            const method = pilotId ? 'PUT' : 'POST';
+            const url = pilotId ? `/api/pilots/${pilotId}` : '/api/pilots';
+            try {
+                const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || '保存に失敗しました。');
+                }
+                alert('操縦者情報を保存しました。');
+                window.location.href = '/pilots.html';
+            } catch (err) {
+                alert(err.message);
+            }
         });
 
         deleteButton.addEventListener('click', async () => {
@@ -140,7 +164,9 @@
                     }
                     alert('操縦者を削除しました。');
                     window.location.href = '/pilots.html';
-                } catch (err) { alert(err.message); }
+                } catch (err) {
+                    alert(err.message);
+                }
             }
         });
     </script>
