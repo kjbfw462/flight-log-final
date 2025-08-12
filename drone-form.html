@@ -31,20 +31,19 @@
         const droneId = params.get('id');
 
         window.addEventListener('load', async () => {
-            // ★★★ 修正箇所 ★★★
-            // droneIdが存在する場合（編集モードの場合）のみ、データを取得する
             if (droneId) {
                 pageTitle.textContent = '機体情報の編集';
                 try {
                     const res = await fetch(`/api/drones/${droneId}`);
                     if (!res.ok) throw new Error('機体情報の読み込みに失敗');
                     const json = await res.json();
-                    Object.keys(json.data).forEach(key => {
-                        if (form.elements[key] && json.data[key]) {
+                    const data = json.data;
+                    Object.keys(data).forEach(key => {
+                        if (form.elements[key] && data[key]) {
                             if (form.elements[key].type === 'date') {
-                                form.elements[key].value = new Date(json.data[key]).toISOString().split('T')[0];
+                                form.elements[key].value = new Date(data[key]).toISOString().split('T')[0];
                             } else {
-                                form.elements[key].value = json.data[key];
+                                form.elements[key].value = data[key];
                             }
                         }
                     });
@@ -58,10 +57,10 @@
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target).entries());
             const method = droneId ? 'PUT' : 'POST';
-            const url = droneId ? `/api/drones/${droneId}` : '/api/drones`;
+            const url = droneId ? `/api/drones/${droneId}` : '/api/drones';
             try {
                 const res = await fetch(url, {
-                    method: method,
+                    method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });

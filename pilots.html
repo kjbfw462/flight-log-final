@@ -3,34 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>操縦者一覧</title>
+    <title>操縦者情報</title>
     <script src="/auth.js" defer></script>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container" style="padding-top: 50px;">
         <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
-        <h1>操縦者一覧</h1>
-        <div id="pilots-list-container" style="margin-top: 1em;"></div>
+        <h1>操縦者情報</h1>
+        <div id="pilot-info-container" style="margin-top: 1em;"></div>
     </div>
     <script>
         window.addEventListener('load', async () => {
-            const listContainer = document.getElementById('pilots-list-container');
+            const infoContainer = document.getElementById('pilot-info-container');
             try {
-                const res = await fetch('/api/pilots');
+                // /api/current-userからログイン中のユーザーIDを取得
+                const userRes = await fetch('/api/current-user');
+                const userJson = await userRes.json();
+                if (!userJson.user) throw new Error('ユーザー情報が見つかりません');
+                const currentUserId = userJson.user.id;
+
+                // /api/pilots/:id から自分の詳細情報を取得
+                const res = await fetch(`/api/pilots/${currentUserId}`);
                 if (!res.ok) throw new Error('操縦者情報の読み込みに失敗');
+                
                 const json = await res.json();
-                listContainer.innerHTML = '';
-                if (json.data.length === 0) {
-                    listContainer.innerHTML = '<p>操縦者はまだ登録されていません。</p>';
-                    return;
-                }
-                // Only the logged-in user can edit their own profile
-                const currentUserLink = `<a href="/pilot-form.html?id=${json.data[0].id}">自分の情報を編集する</a>`;
-                listContainer.innerHTML = currentUserLink;
+                const pilot = json.data;
+                
+                infoContainer.innerHTML = `
+                    <p><strong>氏名:</strong> ${pilot.name || ''}</p>
+                    <p><strong>メールアドレス:</strong> ${pilot.email || ''}</p>
+                    <a href="/pilot-form.html?id=${pilot.id}">自分の情報を編集する</a>
+                `;
 
             } catch (err) {
-                listContainer.innerHTML = `<p style="color:red;">${err.message}</p>`;
+                infoContainer.innerHTML = `<p style="color:red;">${err.message}</p>`;
             }
         });
     </script>
