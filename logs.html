@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飛行履歴一覧</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container" style="padding-top: 50px;">
+        <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
+        <h1>飛行履歴一覧</h1>
+        <a href="/form.html">新規日誌を作成</a>
+        <div id="logs-list-container" style="margin-top: 1em;"></div>
+    </div>
+    <script>
+        window.addEventListener('load', async () => {
+            const listContainer = document.getElementById('logs-list-container');
+            try {
+                const res = await fetch('/api/flight_logs');
+                if (!res.ok) throw new Error('飛行履歴の読み込みに失敗');
+                const json = await res.json();
+                listContainer.innerHTML = '';
+                if (json.data.length === 0) {
+                    listContainer.innerHTML = '<p>飛行履歴はまだありません。</p>';
+                    return;
+                }
+                json.data.forEach(log => {
+                    const item = document.createElement('div');
+                    item.innerHTML = `<a href="/form.html?id=${log.id}">${log.fly_date || '日付未設定'}: ${log.start_location || '場所未設定'}</a>`;
+                    listContainer.appendChild(item);
+                });
+            } catch (err) {
+                listContainer.innerHTML = `<p style="color:red;">${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

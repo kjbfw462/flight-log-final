@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操縦者一覧</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container" style="padding-top: 50px;">
+        <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
+        <h1>操縦者一覧</h1>
+        <div id="pilots-list-container" style="margin-top: 1em;"></div>
+    </div>
+    <script>
+        window.addEventListener('load', async () => {
+            const listContainer = document.getElementById('pilots-list-container');
+            try {
+                const res = await fetch('/api/pilots');
+                if (!res.ok) throw new Error('操縦者情報の読み込みに失敗');
+                const json = await res.json();
+                listContainer.innerHTML = '';
+                if (json.data.length === 0) {
+                    listContainer.innerHTML = '<p>操縦者はまだ登録されていません。</p>';
+                    return;
+                }
+                // Only the logged-in user can edit their own profile
+                const currentUserLink = `<a href="/pilot-form.html?id=${json.data[0].id}">自分の情報を編集する</a>`;
+                listContainer.innerHTML = currentUserLink;
+
+            } catch (err) {
+                listContainer.innerHTML = `<p style="color:red;">${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

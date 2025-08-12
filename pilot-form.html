@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操縦者情報</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container" style="padding-top: 50px;">
+        <a href="/pilots.html" class="back-link">&lt; 操縦者一覧に戻る</a>
+        <h1>操縦者情報</h1>
+        <form id="pilot-form">
+             <input type="hidden" name="id">
+            <label>氏名: <input type="text" name="name" required></label>
+            <label>メールアドレス: <input type="email" name="email" required></label>
+            <label>パスワード (変更する場合のみ): <input type="password" name="password"></label>
+            <button type="submit">保存する</button>
+        </form>
+    </div>
+    <script>
+        const form = document.getElementById('pilot-form');
+        const params = new URLSearchParams(window.location.search);
+        const pilotId = params.get('id');
+
+        window.addEventListener('load', async () => {
+            if (pilotId) {
+                try {
+                    const res = await fetch(`/api/pilots/${pilotId}`);
+                    if (!res.ok) throw new Error('Failed to load pilot data');
+                    const json = await res.json();
+                    Object.keys(json.data).forEach(key => {
+                        if (form.elements[key]) {
+                            form.elements[key].value = json.data[key];
+                        }
+                    });
+                } catch (err) {
+                    alert(err.message);
+                }
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target).entries());
+            if (!data.password) {
+                delete data.password; // Don't send empty password
+            }
+            try {
+                const res = await fetch(`/api/pilots/${pilotId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error('保存に失敗しました。');
+                alert('保存しました');
+                window.location.href = '/pilots.html';
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    </script>
+</body>
+</html>

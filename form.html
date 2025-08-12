@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飛行日誌</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container" style="padding-top: 50px;">
+        <a href="/logs.html" class="back-link">&lt; 飛行履歴一覧に戻る</a>
+        <h1 id="page-title">飛行日誌の作成</h1>
+        <form id="flight-form">
+            <input type="hidden" name="id">
+            <label>飛行日: <input type="date" name="fly_date" required></label>
+            <label>離陸場所: <input type="text" name="start_location" required></label>
+            <label>機体: <select name="drone_id" id="drone-select" required></select></label>
+            <button type="submit">保存する</button>
+        </form>
+    </div>
+    <script>
+        const form = document.getElementById('flight-form');
+        const pageTitle = document.getElementById('page-title');
+        const droneSelect = document.getElementById('drone-select');
+        const params = new URLSearchParams(window.location.search);
+        const logId = params.get('id');
+
+        async function populateDrones() {
+            try {
+                const res = await fetch('/api/drones');
+                const json = await res.json();
+                droneSelect.innerHTML = '<option value="">選択してください</option>';
+                json.data.forEach(drone => {
+                    const option = new Option(drone.nickname || drone.model, drone.id);
+                    droneSelect.add(option);
+                });
+            } catch (err) {
+                console.error('Failed to load drones', err);
+            }
+        }
+
+        window.addEventListener('load', async () => {
+            await populateDrones();
+            if (logId) {
+                pageTitle.textContent = '飛行日誌の編集';
+                try {
+                    const res = await fetch(`/api/flight_logs/${logId}`);
+                    if (!res.ok) throw new Error('Failed to load log data');
+                    const json = await res.json();
+                    Object.keys(json.data).forEach(key => {
+                        if (form.elements[key]) {
+                            form.elements[key].value = json.data[key];
+                        }
+                    });
+                } catch (err) {
+                    alert(err.message);
+                }
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target).entries());
+            const method = logId ? 'PUT' : 'POST';
+            const url = logId ? `/api/flight_logs/${logId}` : '/api/flight_logs`;
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error('保存に失敗しました。');
+                alert('保存しました');
+                window.location.href = '/logs.html';
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    </script>
+</body>
+</html>
