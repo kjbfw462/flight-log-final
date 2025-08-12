@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>飛行日誌の編集</title>
-  <script src="/auth.js" defer></script>
-  <link rel="stylesheet" href="/style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>飛行日誌の編集</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="container" style="padding-top: 50px;">
@@ -13,10 +13,40 @@
     <h1 id="page-title">飛行日誌作成</h1>
     <form id="flight-form">
       <input type="hidden" name="id">
-      <label>飛行日: <input type="date" name="fly_date" required></label>
-      <label>離陸場所: <input type="text" name="start_location" required></label>
-      <label>機体: <select name="drone_id" id="drone-select" required></select></label>
-      <button type="submit">保存する</button>
+      
+      <h3>日常点検（飛行前）</h3>
+      <label>点検年月日 <input type="date" name="precheck_date" required /></label>
+      <label>点検者 <input type="text" name="inspector" required /></label>
+      <label>実施場所 <input type="text" name="place" required /></label>
+      <label>機体全般: <input type="radio" name="body" value="正常" checked required />正常 <input type="radio" name="body" value="異常" required />異常</label>
+      <label>プロペラ: <input type="radio" name="propeller" value="正常" checked required />正常 <input type="radio" name="propeller" value="異常" required />異常</label>
+      <label>フレーム: <input type="radio" name="frame" value="正常" checked required />正常 <input type="radio" name="frame" value="異常" required />異常</label>
+      <label>通信系統: <input type="radio" name="comm" value="正常" checked required />正常 <input type="radio" name="comm" value="異常" required />異常</label>
+      <label>推進系統: <input type="radio" name="engine" value="正常" checked required />正常 <input type="radio" name="engine" value="異常" required />異常</label>
+      <label>電源系統: <input type="radio" name="power" value="正常" checked required />正常 <input type="radio" name="power" value="異常" required />異常</label>
+      <label>自動制御系統: <input type="radio" name="autocontrol" value="正常" checked required />正常 <input type="radio" name="autocontrol" value="異常" required />異常</label>
+      <label>操縦装置: <input type="radio" name="controller" value="正常" checked required />正常 <input type="radio" name="controller" value="異常" required />異常</label>
+      <label>バッテリー・燃料: <input type="radio" name="battery" value="正常" checked required />正常 <input type="radio" name="battery" value="異常" required />異常</label>
+
+      <h3>飛行記録</h3>
+      <label>飛行年月日 <input type="date" name="fly_date" required /></label>
+      <label>機体 <select name="drone_id" id="drone-select" required></select></label>
+      <label>離陸場所（住所） <input type="text" name="start_location" required /></label>
+      <label>着陸場所（住所） <input type="text" name="end_location" required /></label>
+      
+      <h3>飛行時間</h3>
+      <label>離陸時刻 <input type="time" name="start_time" id="start-time" /></label>
+      <label>着陸時刻 <input type="time" name="end_time" id="end-time" /></label>
+      <label>実飛行時間 <input type="text" id="actual-time-display" readonly /></label>
+      <input type="hidden" name="actual_time_minutes" id="actual-time-minutes">
+
+      <h3>レポート（飛行中の不具合）</h3>
+      <label>飛行中の不具合: <input type="radio" name="flight_abnormal" value="正常" checked required />正常 <input type="radio" name="flight_abnormal" value="異常" required />異常</label>
+
+      <h3>日常点検（飛行後）</h3>
+      <label>飛行後点検: <input type="radio" name="aftercheck" value="正常" checked required />正常 <input type="radio" name="aftercheck" value="異常" required />異常</label>
+
+      <button type="submit" style="margin-top: 1em;">この内容で保存</button>
     </form>
 </div>
 <script>
@@ -36,13 +66,33 @@
                 const option = new Option(drone.nickname || drone.model, drone.id);
                 droneSelect.add(option);
             });
-        } catch (err) {
-            console.error('Failed to load drones', err);
-            droneSelect.innerHTML = `<option value="">${err.message}</option>`;
+        } catch (err) { console.error('Failed to load drones', err); }
+    }
+    
+    function calculateFlightTime() {
+        const startTime = document.getElementById('start-time').value;
+        const endTime = document.getElementById('end-time').value;
+        const display = document.getElementById('actual-time-display');
+        const hiddenInput = document.getElementById('actual-time-minutes');
+        if (startTime && endTime) {
+            const start = new Date(`1970-01-01T${startTime}:00`);
+            const end = new Date(`1970-01-01T${endTime}:00`);
+            if (end < start) {
+                display.value = '時刻が不正です';
+                hiddenInput.value = '';
+                return;
+            }
+            const totalMinutes = Math.floor((end.getTime() - start.getTime()) / 60000);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            display.value = `${hours}時間${minutes}分`;
+            hiddenInput.value = totalMinutes;
         }
     }
 
     window.addEventListener('load', async () => {
+        document.getElementById('start-time').addEventListener('input', calculateFlightTime);
+        document.getElementById('end-time').addEventListener('input', calculateFlightTime);
         await populateDrones();
         if (logId) {
             pageTitle.textContent = '飛行日誌の編集';
@@ -52,14 +102,19 @@
                 const json = await res.json();
                 const data = json.data;
                 Object.keys(data).forEach(key => {
-                    if (form.elements[key] && data[key]) {
-                        if (form.elements[key].type === 'date') {
-                            form.elements[key].value = new Date(data[key]).toISOString().split('T')[0];
-                        } else {
-                            form.elements[key].value = data[key];
-                        }
+                    const el = form.elements[key];
+                    if (el && data[key] !== null) {
+                       if (el.type === 'radio') {
+                         const radio = form.querySelector(`input[name="${key}"][value="${data[key]}"]`);
+                         if (radio) radio.checked = true;
+                       } else if(el.type === 'date') {
+                         el.value = new Date(data[key]).toISOString().split('T')[0];
+                       } else {
+                         el.value = data[key];
+                       }
                     }
                 });
+                calculateFlightTime();
             } catch (err) {
                 alert(err.message);
             }
@@ -70,14 +125,9 @@
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target).entries());
         const method = logId ? 'PUT' : 'POST';
-        // ★★★ ここが修正箇所です ★★★
-        const url = logId ? `/api/flight_logs/${logId}` : '/api/flight_logs';
+        const url = logId ? `/api/flight_logs/${logId}` : '/api/flight_logs`;
         try {
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             if (!res.ok) {
                 const errData = await res.json();
                 throw new Error(errData.error || '保存に失敗しました。');
