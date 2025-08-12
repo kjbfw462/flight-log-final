@@ -75,9 +75,9 @@ const startServer = async () => {
         });
         app.post('/api/flight_logs/?', isAuthenticated, async (req, res) => {
             const data = { ...req.body, pilot_id: req.session.user.id };
-            delete data.id; // Ensure ID is not sent on create
+            delete data.id;
             try {
-                const fields = Object.keys(data).filter(k => data[k] !== undefined && data[k] !== null);
+                const fields = Object.keys(data).filter(k => data[k] !== undefined && data[k] !== null && data[k] !== '');
                 const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
                 const values = fields.map(k => data[k]);
                 const result = await db.query(`INSERT INTO flight_logs (${fields.join(',')}) VALUES (${placeholders}) RETURNING id`, values);
@@ -103,7 +103,6 @@ const startServer = async () => {
                 res.json({ data: result.rows });
             } catch (err) { res.status(500).json({ error: '機体情報の取得に失敗しました。' }); }
         });
-        
         app.get('/api/drones/:id/?', isAuthenticated, async (req, res) => {
             try {
                 const result = await db.query('SELECT * FROM drones WHERE id = $1 AND pilot_id = $2', [req.params.id, req.session.user.id]);
@@ -117,11 +116,18 @@ const startServer = async () => {
         // ★★★ ここが修正箇所です ★★★
         app.post('/api/drones/?', isAuthenticated, async (req, res) => {
             const data = { ...req.body, pilot_id: req.session.user.id };
-            delete data.id; // 新規作成時にIDが含まれないように削除
+            delete data.id; // 新規作成時にはIDが不要なため削除
             try {
-                const fields = Object.keys(data).filter(k => data[k] !== '' && data[k] !== null);
+                // 値が空でないフィールドのみを抽出
+                const fields = Object.keys(data).filter(k => data[k] !== '' && data[k] !== null && data[k] !== undefined);
                 const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
                 const values = fields.map(k => data[k]);
+                
+                // 挿入するフィールドが何もない場合はエラー
+                if(fields.length === 0){
+                    return res.status(400).json({ error: '登録するデータがありません。' });
+                }
+
                 const result = await db.query(`INSERT INTO drones (${fields.join(',')}) VALUES (${placeholders}) RETURNING id`, values);
                 res.status(201).json({ id: result.rows[0].id, message: '作成しました' });
             } catch (err) { console.error('Drone save error:', err); res.status(400).json({ error: '機体情報の保存に失敗しました。' }); }
@@ -171,7 +177,9 @@ const startServer = async () => {
                     await db.query(`UPDATE pilots SET name=$1, name_kana=$2, postal_code=$3, prefecture=$4, address1=$5, address2=$6, email=$7, phone=$8, has_license=$9, initial_flight_minutes=$10, password=$11 WHERE id=$12`, [p.name, p.name_kana, p.postal_code, p.prefecture, p.address1, p.address2, p.email, p.phone, p.has_license, p.initial_flight_minutes, hash, req.params.id]);
                 } else {
                     delete p.password;
-                    await db.query(`UPDATE pilots SET name=$1, name_kana=$2, postal_code=$3, prefecture=$4, address1=$5, address2=$6, email=$7, phone=$8, has_license=$9, initial_flight_minutes=$10 WHERE id=$11`, [p.name, p.name_kana, p.postal_code, p.prefecture, p.address1, p.address2, p.email, p.phone, p.has_license, p.initial_flight_minutes, req.params.id]);
+                    const fields = Object.keys(p).map((k, i) => `"${k}" = $${i + 1}`).join(', ');
+                    const values = Object.values(p);
+                    await db.query(`UPDATE pilots SET ${fields} WHERE id = $${values.length + 1}`, [...values, req.params.id]);
                 }
                 req.session.user.name = p.name;
                 res.json({ message: "操縦者情報を更新しました。" });

@@ -17,7 +17,11 @@
             <label>型式: <input type="text" name="model" required></label>
             <label>機体の愛称: <input type="text" name="nickname"></label>
             <label>登録記号: <input type="text" name="registration_symbol"></label>
-            <button type="submit">保存する</button>
+            <label>種類: <input type="text" name="type"></label>
+            <label>製造番号: <input type="text" name="serial_number"></label>
+            <label>登録有効期間 (開始): <input type="date" name="valid_period_start"></label>
+            <label>登録有効期間 (終了): <input type="date" name="valid_period_end"></label>
+            <button type="submit" style="margin-top: 1em;">保存する</button>
         </form>
     </div>
     <script>
@@ -30,12 +34,17 @@
             if (droneId) {
                 pageTitle.textContent = '機体情報の編集';
                 try {
-                    const res = await fetch(`/api/drones/${droneId}`); // This API doesn't exist yet, but we'll add it.
-                    if (!res.ok) throw new Error('Failed to load drone data');
+                    const res = await fetch(`/api/drones/${droneId}`);
+                    if (!res.ok) throw new Error('機体情報の読み込みに失敗');
                     const json = await res.json();
                     Object.keys(json.data).forEach(key => {
-                        if (form.elements[key]) {
-                            form.elements[key].value = json.data[key];
+                        if (form.elements[key] && json.data[key]) {
+                             // 日付フィールドはYYYY-MM-DD形式に変換
+                            if(form.elements[key].type === 'date') {
+                                form.elements[key].value = new Date(json.data[key]).toISOString().split('T')[0];
+                            } else {
+                                form.elements[key].value = json.data[key];
+                            }
                         }
                     });
                 } catch (err) {
@@ -55,7 +64,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                if (!res.ok) throw new Error('保存に失敗しました。');
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || '保存に失敗しました。');
+                }
                 alert('保存しました');
                 window.location.href = '/drones.html';
             } catch (err) {
