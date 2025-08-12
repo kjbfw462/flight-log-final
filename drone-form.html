@@ -31,6 +31,8 @@
         const droneId = params.get('id');
 
         window.addEventListener('load', async () => {
+            // ★★★ 修正箇所 ★★★
+            // droneIdが存在する場合（編集モードの場合）のみ、データを取得する
             if (droneId) {
                 pageTitle.textContent = '機体情報の編集';
                 try {
@@ -39,8 +41,7 @@
                     const json = await res.json();
                     Object.keys(json.data).forEach(key => {
                         if (form.elements[key] && json.data[key]) {
-                             // 日付フィールドはYYYY-MM-DD形式に変換
-                            if(form.elements[key].type === 'date') {
+                            if (form.elements[key].type === 'date') {
                                 form.elements[key].value = new Date(json.data[key]).toISOString().split('T')[0];
                             } else {
                                 form.elements[key].value = json.data[key];

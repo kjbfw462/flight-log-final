@@ -36,6 +36,8 @@ const startServer = async () => {
     try {
         await db.initializeDB();
 
+        // ... (login, logout, current-user, flight_logs APIs are unchanged) ...
+
         app.post('/api/login/?', async (req, res) => {
             const { email, password } = req.body;
             if (!email || !password) return res.status(400).json({ error: 'メールアドレスとパスワードを入力してください。' });
@@ -59,7 +61,6 @@ const startServer = async () => {
 
         app.get('/api/current-user/?', (req, res) => res.json({ user: req.session.user || null }));
 
-        // Flight Log APIs
         app.get('/api/flight_logs/?', isAuthenticated, async (req, res) => {
             try {
                 const result = await db.query(`SELECT fl.*, d.model as drone_model, d.nickname as drone_nickname, p.name as pilot_name FROM flight_logs fl LEFT JOIN drones d ON fl.drone_id = d.id LEFT JOIN pilots p ON fl.pilot_id = p.id WHERE fl.pilot_id = $1 ORDER BY fl.fly_date DESC, fl.id DESC`, [req.session.user.id]);
@@ -96,6 +97,7 @@ const startServer = async () => {
              } catch (err) { console.error('Flight log update error:', err); res.status(400).json({ error: '日誌の更新に失敗しました。' }); }
         });
 
+
         // Drone APIs
         app.get('/api/drones/?', isAuthenticated, async (req, res) => {
             try {
@@ -113,24 +115,29 @@ const startServer = async () => {
             }
         });
         
-        // ★★★ ここが修正箇所です ★★★
+        // ★★★ 修正箇所 ★★★
         app.post('/api/drones/?', isAuthenticated, async (req, res) => {
             const data = { ...req.body, pilot_id: req.session.user.id };
-            delete data.id; // 新規作成時にはIDが不要なため削除
+            delete data.id;
+
+            // 空の文字列をnullに変換して、データベースエラーを防ぐ
+            for (const key in data) {
+                if (data[key] === '') {
+                    data[key] = null;
+                }
+            }
+
             try {
-                // 値が空でないフィールドのみを抽出
-                const fields = Object.keys(data).filter(k => data[k] !== '' && data[k] !== null && data[k] !== undefined);
+                const fields = Object.keys(data).filter(k => data[k] !== null);
                 const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
                 const values = fields.map(k => data[k]);
-                
-                // 挿入するフィールドが何もない場合はエラー
-                if(fields.length === 0){
-                    return res.status(400).json({ error: '登録するデータがありません。' });
-                }
 
                 const result = await db.query(`INSERT INTO drones (${fields.join(',')}) VALUES (${placeholders}) RETURNING id`, values);
                 res.status(201).json({ id: result.rows[0].id, message: '作成しました' });
-            } catch (err) { console.error('Drone save error:', err); res.status(400).json({ error: '機体情報の保存に失敗しました。' }); }
+            } catch (err) {
+                console.error('Drone save error:', err);
+                res.status(400).json({ error: '機体情報の保存に失敗しました。必須項目が入力されているか確認してください。' });
+            }
         });
 
         app.put('/api/drones/:id/?', isAuthenticated, async (req, res) => {
@@ -138,6 +145,13 @@ const startServer = async () => {
             const { id } = req.params;
             const pilotId = req.session.user.id;
             delete data.id;
+
+            for (const key in data) {
+                if (data[key] === '') {
+                    data[key] = null;
+                }
+            }
+
             const fields = Object.keys(data).map((k, i) => `"${k}" = $${i + 1}`).join(', ');
             const values = Object.values(data);
             try {
@@ -147,7 +161,7 @@ const startServer = async () => {
             } catch (err) { console.error('Drone update error:', err); res.status(400).json({ error: '機体情報の更新に失敗しました。' }); }
         });
 
-        // Pilot APIs
+        // ... (Pilot APIs and Page Serving are unchanged) ...
         app.get('/api/pilots/?', isAuthenticated, async (req, res) => {
              try {
                 const result = await db.query(`SELECT p.id, p.name, p.initial_flight_minutes + COALESCE(SUM(fl.actual_time_minutes), 0) AS total_flight_minutes FROM pilots p LEFT JOIN flight_logs fl ON p.id = fl.pilot_id GROUP BY p.id ORDER BY p.name ASC`);
@@ -177,16 +191,15 @@ const startServer = async () => {
                     await db.query(`UPDATE pilots SET name=$1, name_kana=$2, postal_code=$3, prefecture=$4, address1=$5, address2=$6, email=$7, phone=$8, has_license=$9, initial_flight_minutes=$10, password=$11 WHERE id=$12`, [p.name, p.name_kana, p.postal_code, p.prefecture, p.address1, p.address2, p.email, p.phone, p.has_license, p.initial_flight_minutes, hash, req.params.id]);
                 } else {
                     delete p.password;
-                    const fields = Object.keys(p).map((k, i) => `"${k}" = $${i + 1}`).join(', ');
-                    const values = Object.values(p);
+                    const fields = Object.keys(p).filter(k=>p[k]).map((k, i) => `"${k}" = $${i + 1}`).join(', ');
+                    const values = Object.keys(p).filter(k=>p[k]).map(k => p[k]);
                     await db.query(`UPDATE pilots SET ${fields} WHERE id = $${values.length + 1}`, [...values, req.params.id]);
                 }
                 req.session.user.name = p.name;
                 res.json({ message: "操縦者情報を更新しました。" });
-            } catch (err) { if (err.code === '23505') { return res.status(409).json({ error: 'このメールアドレスは既に使用されています。' }); } res.status(400).json({ error: '更新に失敗しました。' }); }
+            } catch (err) { if (err.code === '23505') { return res.status(409).json({ error: 'このメールアドレスは既に使用されています。' }); } console.error(err); res.status(400).json({ error: '更新に失敗しました。' }); }
         });
-        
-        // HTML Page Serving
+
         const pages = ['/', '/index.html', '/login.html', '/logs.html', '/menu.html', '/form.html', '/drones.html', '/drone-form.html', '/pilots.html', '/pilot-form.html'];
         pages.forEach(page => {
             const filePath = page === '/' ? 'index.html' : page.substring(1);
