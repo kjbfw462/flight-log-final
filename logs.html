@@ -7,8 +7,8 @@
     <script src="/auth.js" defer></script>
     <link rel="stylesheet" href="/style.css">
     <style>
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5em; border-bottom: 1px solid #eee; }
-        .delete-btn { background: #e95252; color: white; border: none; padding: 0.3em 0.8em; border-radius: 4px; cursor: pointer; }
+        .list-item { padding: 0.8em; border-bottom: 1px solid #eee; }
+        .list-item a { text-decoration: none; color: #333; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -19,9 +19,8 @@
         <div id="logs-list-container" style="margin-top: 1em; border: 1px solid #eee; border-radius: 8px;"></div>
     </div>
     <script>
-        const listContainer = document.getElementById('logs-list-container');
-
-        async function loadLogs() {
+        window.addEventListener('load', async () => {
+            const listContainer = document.getElementById('logs-list-container');
             try {
                 const res = await fetch('/api/flight_logs');
                 if (!res.ok) throw new Error('飛行履歴の読み込みに失敗');
@@ -35,40 +34,14 @@
                 json.data.forEach(log => {
                     const item = document.createElement('div');
                     item.className = 'list-item';
-                    item.dataset.id = log.id;
                     const logDate = log.fly_date ? new Date(log.fly_date).toLocaleDateString() : '日付未設定';
-                    item.innerHTML = `
-                        <a href="/form.html?id=${log.id}">${logDate}: ${log.start_location || '場所未設定'}</a>
-                        <button class="delete-btn">削除</button>
-                    `;
+                    item.innerHTML = `<a href="/form.html?id=${log.id}">${logDate}: ${log.start_location || '場所未設定'}</a>`;
                     listContainer.appendChild(item);
                 });
             } catch (err) {
                 listContainer.innerHTML = `<p style="color:red; padding: 1em;">${err.message}</p>`;
             }
-        }
-        
-        listContainer.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('delete-btn')) {
-                const itemDiv = e.target.closest('.list-item');
-                const logId = itemDiv.dataset.id;
-                
-                if (confirm('この飛行日誌を本当に削除しますか？')) {
-                    try {
-                        const res = await fetch(`/api/flight_logs/${logId}`, { method: 'DELETE' });
-                        if (!res.ok) {
-                             const errData = await res.json();
-                            throw new Error(errData.error || '削除に失敗しました。');
-                        }
-                        itemDiv.remove();
-                    } catch (err) {
-                        alert(err.message);
-                    }
-                }
-            }
         });
-
-        window.addEventListener('load', loadLogs);
     </script>
 </body>
 </html>

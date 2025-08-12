@@ -7,31 +7,20 @@
     <script src="/auth.js" defer></script>
     <link rel="stylesheet" href="/style.css">
     <style>
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5em; border-bottom: 1px solid #eee; }
-        .delete-btn { background: #e95252; color: white; border: none; padding: 0.3em 0.8em; border-radius: 4px; cursor: pointer; }
-        .delete-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .list-item { padding: 0.8em; border-bottom: 1px solid #eee; }
+        .list-item a { text-decoration: none; color: #333; font-weight: 500; }
     </style>
 </head>
 <body>
     <div class="container" style="padding-top: 50px;">
         <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
         <h1>操縦者一覧</h1>
-        <a href="/pilot-form.html">自分の情報を編集する</a>
         <div id="pilots-list-container" style="margin-top: 1em; border: 1px solid #eee; border-radius: 8px;"></div>
     </div>
     <script>
-        const listContainer = document.getElementById('pilots-list-container');
-        let currentUserId = null;
-
-        async function loadPilots() {
+        window.addEventListener('load', async () => {
+            const listContainer = document.getElementById('pilots-list-container');
             try {
-                // まず自分のIDを取得
-                const userRes = await fetch('/api/current-user');
-                const userJson = await userRes.json();
-                if (!userJson.user) throw new Error('ユーザー情報が見つかりません');
-                currentUserId = userJson.user.id;
-
-                // 操縦者リストを取得
                 const res = await fetch('/api/pilots');
                 if (!res.ok) throw new Error('操縦者一覧の読み込みに失敗');
                 const json = await res.json();
@@ -44,42 +33,13 @@
                 json.data.forEach(pilot => {
                     const item = document.createElement('div');
                     item.className = 'list-item';
-                    item.dataset.id = pilot.id;
-                    const isCurrentUser = pilot.id === currentUserId;
-                    
-                    item.innerHTML = `
-                        <span>${pilot.name} ${isCurrentUser ? '<strong>(あなた)</strong>' : ''}</span>
-                        <button class="delete-btn" ${isCurrentUser ? 'disabled' : ''}>削除</button>
-                    `;
+                    item.innerHTML = `<a href="/pilot-form.html?id=${pilot.id}">${pilot.name}</a>`;
                     listContainer.appendChild(item);
                 });
-
             } catch (err) {
                 listContainer.innerHTML = `<p style="color:red; padding: 1em;">${err.message}</p>`;
             }
-        }
-        
-        listContainer.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('delete-btn') && !e.target.disabled) {
-                const itemDiv = e.target.closest('.list-item');
-                const pilotId = itemDiv.dataset.id;
-                
-                if (confirm('この操縦者を本当に削除しますか？関連する日誌や機体があると削除できません。')) {
-                    try {
-                        const res = await fetch(`/api/pilots/${pilotId}`, { method: 'DELETE' });
-                        if (!res.ok) {
-                            const errData = await res.json();
-                            throw new Error(errData.error || '削除に失敗しました。');
-                        }
-                        itemDiv.remove();
-                    } catch (err) {
-                        alert(err.message);
-                    }
-                }
-            }
         });
-
-        window.addEventListener('load', loadPilots);
     </script>
 </body>
 </html>

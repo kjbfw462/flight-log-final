@@ -7,8 +7,8 @@
     <script src="/auth.js" defer></script>
     <link rel="stylesheet" href="/style.css">
     <style>
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5em; border-bottom: 1px solid #eee; }
-        .delete-btn { background: #e95252; color: white; border: none; padding: 0.3em 0.8em; border-radius: 4px; cursor: pointer; }
+        .list-item { padding: 0.8em; border-bottom: 1px solid #eee; }
+        .list-item a { text-decoration: none; color: #333; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -19,9 +19,8 @@
         <div id="drones-list-container" style="margin-top: 1em; border: 1px solid #eee; border-radius: 8px;"></div>
     </div>
     <script>
-        const listContainer = document.getElementById('drones-list-container');
-        
-        async function loadDrones() {
+        window.addEventListener('load', async () => {
+            const listContainer = document.getElementById('drones-list-container');
             try {
                 const res = await fetch('/api/drones');
                 if (!res.ok) throw new Error('機体情報の読み込みに失敗');
@@ -35,40 +34,13 @@
                 json.data.forEach(drone => {
                     const item = document.createElement('div');
                     item.className = 'list-item';
-                    item.dataset.id = drone.id;
-                    item.innerHTML = `
-                        <a href="/drone-form.html?id=${drone.id}">${drone.nickname || drone.model}</a>
-                        <button class="delete-btn">削除</button>
-                    `;
+                    item.innerHTML = `<a href="/drone-form.html?id=${drone.id}">${drone.nickname || drone.model}</a>`;
                     listContainer.appendChild(item);
                 });
             } catch (err) {
                 listContainer.innerHTML = `<p style="color:red; padding: 1em;">${err.message}</p>`;
             }
-        }
-
-        listContainer.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('delete-btn')) {
-                const itemDiv = e.target.closest('.list-item');
-                const droneId = itemDiv.dataset.id;
-                
-                if (confirm('この機体を本当に削除しますか？')) {
-                    try {
-                        const res = await fetch(`/api/drones/${droneId}`, { method: 'DELETE' });
-                        if (!res.ok) {
-                            const errData = await res.json();
-                            throw new Error(errData.error || '削除に失敗しました。');
-                        }
-                        // 画面から要素を削除
-                        itemDiv.remove();
-                    } catch (err) {
-                        alert(err.message);
-                    }
-                }
-            }
         });
-
-        window.addEventListener('load', loadDrones);
     </script>
 </body>
 </html>
