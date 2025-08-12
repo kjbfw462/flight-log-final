@@ -125,7 +125,7 @@
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target).entries());
         const method = logId ? 'PUT' : 'POST';
-        const url = logId ? `/api/flight_logs/${logId}` : '/api/flight_logs`;
+        const url = logId ? `/api/flight_logs/${logId}` : '/api/flight_logs';
         try {
             const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             if (!res.ok) {

@@ -57,7 +57,7 @@
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target).entries());
             const method = droneId ? 'PUT' : 'POST';
-            const url = droneId ? `/api/drones/${droneId}` : '/api/drones`;
+            const url = droneId ? `/api/drones/${droneId}` : '/api/drones';
             try {
                 const res = await fetch(url, {
                     method,
