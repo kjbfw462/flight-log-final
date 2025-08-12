@@ -29,6 +29,7 @@
     async function populateDrones() {
         try {
             const res = await fetch('/api/drones');
+            if (!res.ok) throw new Error('機体リストの読み込みに失敗');
             const json = await res.json();
             droneSelect.innerHTML = '<option value="">選択してください</option>';
             json.data.forEach(drone => {
@@ -37,6 +38,7 @@
             });
         } catch (err) {
             console.error('Failed to load drones', err);
+            droneSelect.innerHTML = `<option value="">${err.message}</option>`;
         }
     }
 
@@ -46,12 +48,12 @@
             pageTitle.textContent = '飛行日誌の編集';
             try {
                 const res = await fetch(`/api/flight_logs/${logId}`);
-                if (!res.ok) throw new Error('Failed to load log data');
+                if (!res.ok) throw new Error('飛行記録の読み込みに失敗');
                 const json = await res.json();
                 const data = json.data;
                 Object.keys(data).forEach(key => {
                     if (form.elements[key] && data[key]) {
-                        if(form.elements[key].type === 'date') {
+                        if (form.elements[key].type === 'date') {
                             form.elements[key].value = new Date(data[key]).toISOString().split('T')[0];
                         } else {
                             form.elements[key].value = data[key];
@@ -68,7 +70,8 @@
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target).entries());
         const method = logId ? 'PUT' : 'POST';
-        const url = logId ? `/api/flight_logs/${logId}` : '/api/flight_logs`;
+        // ★★★ ここが修正箇所です ★★★
+        const url = logId ? `/api/flight_logs/${logId}` : '/api/flight_logs';
         try {
             const res = await fetch(url, {
                 method,
