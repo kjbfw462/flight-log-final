@@ -21,10 +21,11 @@
             const listContainer = document.getElementById('logs-list-container');
             try {
                 const res = await fetch('/api/flight_logs');
-                if (!res.ok) throw new Error('読み込み失敗');
+                if (!res.ok) throw new Error('読み込みに失敗しました');
                 const json = await res.json();
+                listContainer.innerHTML = '';
                 if (json.data.length === 0) {
-                    listContainer.innerHTML = '<p style="padding: 1em;">飛行履歴はありません。</p>';
+                    listContainer.innerHTML = '<p style="padding: 1em;">飛行履歴はまだありません。</p>';
                     return;
                 }
                 json.data.forEach(log => {

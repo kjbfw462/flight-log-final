@@ -1,9 +1,9 @@
 :root {
     --primary-color: #007bff;
     --danger-color: #dc3545;
-    --background-color: #f4f7f9;
+    --background-color: #f8f9fa;
     --text-color: #333;
-    --border-color: #dee2e6;
+    --border-color: #e1e8ed;
     --shadow: 0 1px 3px rgba(0,0,0,0.05);
     --input-bg: #fff;
 }
@@ -39,6 +39,7 @@ h3 { margin-top: 2em; border-bottom: 2px solid var(--primary-color); padding-bot
 .red-btn { background: var(--danger-color); color: white; }
 .blue-btn:hover, button[type="submit"]:hover { background-color: #0069d9; }
 .red-btn:hover { background-color: #c82333; }
+.red-btn:disabled { background: #ccc; cursor: not-allowed; }
 
 /* --- Forms --- */
 label { display: block; margin-top: 1em; margin-bottom: .4em; font-weight: 600; }
@@ -61,7 +62,7 @@ input[readonly] { background-color: #e9ecef; }
 
 /* --- List Pages --- */
 .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
-.header-actions .blue-btn { width: auto; }
+.header-actions .blue-btn { width: auto; font-size: 0.9em; }
 .list-container { margin-top: 1em; border: 1px solid var(--border-color); border-radius: 8px; background-color: white; overflow: hidden; }
 .list-item { display: flex; justify-content: space-between; align-items: center; padding: 1em; border-bottom: 1px solid var(--border-color); }
 .list-item:last-child { border-bottom: none; }

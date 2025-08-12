@@ -21,10 +21,11 @@
             const listContainer = document.getElementById('drones-list-container');
             try {
                 const res = await fetch('/api/drones');
-                if (!res.ok) throw new Error('読み込み失敗');
+                if (!res.ok) throw new Error('読み込みに失敗しました');
                 const json = await res.json();
+                listContainer.innerHTML = '';
                 if (json.data.length === 0) {
-                    listContainer.innerHTML = '<p style="padding: 1em;">登録機体はありません。</p>';
+                    listContainer.innerHTML = '<p style="padding: 1em;">登録されている機体はありません。</p>';
                     return;
                 }
                 json.data.forEach(drone => {
