@@ -6,29 +6,25 @@
     <title>機体一覧</title>
     <script src="/auth.js" defer></script>
     <link rel="stylesheet" href="/style.css">
-    <style>
-        .list-item { padding: 0.8em; border-bottom: 1px solid #eee; }
-        .list-item a { text-decoration: none; color: #333; font-weight: 500; }
-    </style>
 </head>
 <body>
-    <div class="container" style="padding-top: 50px;">
+    <div class="container">
         <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
-        <h1>機体一覧</h1>
-        <a href="/drone-form.html">機体を新規追加</a>
-        <div id="drones-list-container" style="margin-top: 1em; border: 1px solid #eee; border-radius: 8px;"></div>
+        <div class="header-actions">
+            <h1>機体一覧</h1>
+            <a href="/drone-form.html" class="blue-btn">機体を新規追加</a>
+        </div>
+        <div id="drones-list-container" class="list-container"></div>
     </div>
     <script>
         window.addEventListener('load', async () => {
             const listContainer = document.getElementById('drones-list-container');
             try {
                 const res = await fetch('/api/drones');
-                if (!res.ok) throw new Error('機体情報の読み込みに失敗');
+                if (!res.ok) throw new Error('読み込み失敗');
                 const json = await res.json();
-                
-                listContainer.innerHTML = '';
                 if (json.data.length === 0) {
-                    listContainer.innerHTML = '<p style="padding: 1em;">機体はまだ登録されていません。</p>';
+                    listContainer.innerHTML = '<p style="padding: 1em;">登録機体はありません。</p>';
                     return;
                 }
                 json.data.forEach(drone => {

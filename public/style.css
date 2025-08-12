@@ -1,10 +1,10 @@
 :root {
     --primary-color: #1d9bf0;
+    --danger-color: #e95252;
     --background-color: #f8f9fa;
     --text-color: #333;
     --border-color: #e1e8ed;
     --shadow: 0 1px 3px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.05);
 }
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -16,6 +16,7 @@ body {
 .container {
     max-width: 800px;
     margin: 0 auto;
+    padding-top: 50px;
 }
 .back-link {
     display: inline-block;
@@ -24,36 +25,45 @@ body {
     text-decoration: none;
     font-weight: 500;
 }
-.back-link:hover {
-    color: #000;
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
 }
-h1 {
-    font-size: 2em;
-    margin-bottom: 1.5rem;
-}
-label {
-    display: block;
-    margin-top: 1em;
-    margin-bottom: .4em;
+.blue-btn {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white !important;
+    padding: .6em 1.2em;
+    border-radius: .5rem;
+    text-decoration: none;
     font-weight: 600;
+    font-size: .95em;
+    border: none;
+    cursor: pointer;
 }
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="tel"],
-input[type="date"],
-input[type="time"],
-select {
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: .7em;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 1em;
+.list-container {
+    margin-top: 1em;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: white;
+    overflow: hidden;
 }
-input:focus, select:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.2);
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1em;
+    border-bottom: 1px solid var(--border-color);
+}
+.list-item:last-child {
+    border-bottom: none;
+}
+.list-item a {
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 500;
 }
