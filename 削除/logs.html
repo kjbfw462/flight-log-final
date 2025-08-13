@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飛行履歴一覧</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .pdf-export-area {
+            background-color: #fff;
+            padding: 1rem;
+            border-radius: .5rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .pdf-export-area label { font-weight: 600; font-size: .9em; margin: 0; }
+        .pdf-export-area input[type=date] { padding: .4em; border: 1px solid #ccc; border-radius: .3rem; }
+        .pdf-export-area .green-btn {
+            margin-left: auto;
+            background-color: #16a34a;
+            color: #fff;
+            width: auto;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
+        <div class="header-actions">
+            <h1>飛行履歴一覧</h1>
+            <a href="/form.html" class="blue-btn">新規日誌を作成</a>
+        </div>
+        
+        <div class="pdf-export-area">
+            <label>飛行日期間:</label>
+            <input type="date" id="start-date">
+            <span>〜</span>
+            <input type="date" id="end-date">
+            <button id="pdf-export-btn" class="blue-btn green-btn">PDF出力</button>
+        </div>
+        <div id="logs-list-container" class="list-container"></div>
+    </div>
+    <script>
+        const listContainer = document.getElementById('logs-list-container');
+        const pdfExportBtn = document.getElementById('pdf-export-btn');
+
+        window.addEventListener('load', async () => {
+            try {
+                const res = await fetch('/api/flight_logs');
+                if (!res.ok) throw new Error('読み込みに失敗しました');
+                const json = await res.json();
+                listContainer.innerHTML = '';
+                if (json.data.length === 0) {
+                    listContainer.innerHTML = '<p style="padding: 1em;">飛行履歴はまだありません。</p>';
+                    return;
+                }
+                json.data.forEach(log => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    const logDate = log.fly_date ? new Date(log.fly_date).toLocaleDateString() : '日付未設定';
+                    item.innerHTML = `<a href="/form.html?id=${log.id}">${logDate}: ${log.start_location || '場所未設定'}</a>`;
+                    listContainer.appendChild(item);
+                });
+            } catch (err) {
+                listContainer.innerHTML = `<p style="color:red; padding: 1em;">${err.message}</p>`;
+            }
+        });
+
+        pdfExportBtn.addEventListener('click', () => {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            if (!startDate || !endDate) {
+                alert('開始日と終了日を両方指定してください。');
+                return;
+            }
+            // 新しいタブでPDFを開く
+            window.open(`/api/flight_logs/pdf?start=${startDate}&end=${endDate}`, '_blank');
+        });
+    </script>
+</body>
+</html>

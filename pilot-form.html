@@ -129,13 +129,18 @@
             document.getElementById('initial_flight_minutes').value = parseTimeToMinutes(document.getElementById('initial_flight_time_str').value);
             const data = Object.fromEntries(new FormData(e.target).entries());
             data.has_license = form.elements.has_license.checked;
-            if (!data.password) delete data.password;
+            if (!data.password && pilotId) {
+                delete data.password;
+            }
             
             const method = pilotId ? 'PUT' : 'POST';
             const url = pilotId ? `/api/pilots/${pilotId}` : '/api/pilots';
             try {
                 const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-                if (!res.ok) throw new Error('保存に失敗しました。');
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || '保存に失敗しました。');
+                }
                 alert('保存しました。');
                 window.location.href = '/pilots.html';
             } catch (err) { alert(err.message); }

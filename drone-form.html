@@ -13,14 +13,18 @@
         <h1 id="page-title">機体の新規追加</h1>
         <form id="drone-form">
             <input type="hidden" name="id">
+            <h3>機体情報</h3>
             <label>製造者名 <span class="req">*</span><input type="text" name="manufacturer" required></label>
             <label>型式 <span class="req">*</span><input type="text" name="model" required></label>
             <label>種類 <span class="req">*</span><input type="text" name="type" required></label>
             <label>製造番号 <span class="req">*</span><input type="text" name="serial_number" required></label>
             <label>登録記号 <span class="req">*</span><input type="text" name="registration_symbol" required></label>
-            <label>登録有効期間</label>
-            <div><input type="date" name="valid_period_start" style="width: 48%; display: inline-block;"> ~ <input type="date" name="valid_period_end" style="width: 48%; display: inline-block;"></div>
             <label>機体の愛称<input type="text" name="nickname"></label>
+            
+            <h3>登録有効期間</h3>
+            <label>開始日<input type="date" name="valid_period_start"></label>
+            <label>終了日<input type="date" name="valid_period_end"></label>
+            
             <button type="submit">この内容で保存</button>
         </form>
         <button type="button" id="delete-button" class="red-btn" style="display: none;">この機体を削除する</button>

@@ -44,6 +44,7 @@
             <input type="date" id="end-date">
             <button id="pdf-export-btn" class="blue-btn green-btn">PDF出力</button>
         </div>
+
         <div id="logs-list-container" class="list-container"></div>
     </div>
     <script>
@@ -79,7 +80,6 @@
                 alert('開始日と終了日を両方指定してください。');
                 return;
             }
-            // 新しいタブでPDFを開く
             window.open(`/api/flight_logs/pdf?start=${startDate}&end=${endDate}`, '_blank');
         });
     </script>

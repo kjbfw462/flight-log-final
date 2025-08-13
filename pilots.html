@@ -6,32 +6,24 @@
     <title>操縦者一覧</title>
     <script src="/auth.js" defer></script>
     <link rel="stylesheet" href="/style.css">
-    <style>
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8em; border-bottom: 1px solid #eee; }
-        .list-item a { text-decoration: none; color: #333; font-weight: 500; }
-        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .blue-btn { display: inline-block; background-color: #1d9bf0; color: white !important; padding: .6em 1.2em; border-radius: .5rem; text-decoration: none; font-weight: 600; font-size: .95em; }
-    </style>
 </head>
 <body>
-    <div class="container" style="padding-top: 50px;">
+    <div class="container">
         <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
         <div class="header-actions">
             <h1>操縦者一覧</h1>
             <a href="/pilot-form.html" class="blue-btn">新規操縦者を追加</a>
-            </div>
-        <div id="pilots-list-container" style="margin-top: 1em; border: 1px solid #eee; border-radius: 8px; background-color: white;"></div>
+        </div>
+        <div id="pilots-list-container" class="list-container"></div>
     </div>
     <script>
-        const listContainer = document.getElementById('pilots-list-container');
-        let currentUserId = null;
-
         window.addEventListener('load', async () => {
+            const listContainer = document.getElementById('pilots-list-container');
+            let currentUserId = null;
             try {
                 const userRes = await fetch('/api/current-user');
                 const userJson = await userRes.json();
-                if (!userJson.user) return;
-                currentUserId = userJson.user.id;
+                if (userJson.user) currentUserId = userJson.user.id;
 
                 const res = await fetch('/api/pilots');
                 if (!res.ok) throw new Error('操縦者一覧の読み込みに失敗');

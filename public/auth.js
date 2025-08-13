@@ -1,12 +1,10 @@
 (async () => {
-    // ログインページでは認証チェックを行わない
     if (window.location.pathname.endsWith('/login.html')) {
         return;
     }
     try {
         const res = await fetch('/api/current-user');
         if (res.status === 401) {
-             // サーバーから401が返ってきたら明確にログインページへ
             window.location.href = '/login.html';
             return;
         }
@@ -17,7 +15,6 @@
         }
         renderHeaderUI(data.user);
     } catch (err) {
-        // fetch自体が失敗した場合（サーバーがダウンしているなど）
         console.error('Authentication error:', err);
         window.location.href = '/login.html';
     }
@@ -25,21 +22,16 @@
 
 function renderHeaderUI(user) {
     const headerUI = document.createElement('div');
-    headerUI.style.position = 'fixed';
-    headerUI.style.top = '10px';
-    headerUI.style.right = '20px';
-    headerUI.style.zIndex = '9999';
-    headerUI.style.display = 'flex';
-    headerUI.style.alignItems = 'center';
-    headerUI.style.gap = '15px';
-    headerUI.style.backgroundColor = 'white';
-    headerUI.style.padding = '8px 15px';
-    headerUI.style.borderRadius = '20px';
-    headerUI.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-    headerUI.style.fontSize = '14px';
+    headerUI.style.cssText = `
+        position: fixed; top: 10px; right: 20px; z-index: 9999;
+        display: flex; align-items: center; gap: 15px;
+        background-color: white; padding: 8px 15px;
+        border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        font-size: 14px;
+    `;
     headerUI.innerHTML = `
         <span>こんにちは、<strong>${user.name}</strong>さん</span>
-        <button id="logout-btn" style="border:none; background-color:#ef4444; color:white; padding: 6px 12px; border-radius:15px; cursor:pointer;">ログアウト</button>
+        <button id="logout-btn" style="border:none; background-color:#dc3545; color:white; padding: 6px 12px; border-radius:15px; cursor:pointer;">ログアウト</button>
     `;
     document.body.prepend(headerUI);
 

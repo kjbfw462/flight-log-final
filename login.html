@@ -10,8 +10,10 @@
     <div class="container">
         <h1>ログイン</h1>
         <form id="login-form">
-            <label>メールアドレス: <input type="email" name="email" required></label>
-            <label>パスワード: <input type="password" name="password" required></label>
+            <label>メールアドレス:</label>
+            <input type="email" name="email" required>
+            <label>パスワード:</label>
+            <input type="password" name="password" required>
             <button type="submit">ログイン</button>
         </form>
         <div id="error-message" style="color: red; margin-top: 1em;"></div>
@@ -22,6 +24,7 @@
             const form = e.target;
             const data = Object.fromEntries(new FormData(form).entries());
             const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = '';
             try {
                 const res = await fetch('/api/login', {
                     method: 'POST',

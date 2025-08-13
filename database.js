@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error('重大なエラー: 環境変数 DATABASE_URL が設定されていません。Renderの環境変数設定を確認してください。');
+  console.error('重大なエラー: 環境変数 DATABASE_URL が設定されていません。');
   process.exit(1);
 }
 

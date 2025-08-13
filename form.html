@@ -20,6 +20,13 @@
       <label>実施場所: <input type="text" name="place" required /></label>
       <label>機体全般: <input type="radio" name="body" value="正常" checked required />正常 <input type="radio" name="body" value="異常" required />異常</label>
       <label>プロペラ: <input type="radio" name="propeller" value="正常" checked required />正常 <input type="radio" name="propeller" value="異常" required />異常</label>
+      <label>フレーム: <input type="radio" name="frame" value="正常" checked required />正常 <input type="radio" name="frame" value="異常" required />異常</label>
+      <label>通信系統: <input type="radio" name="comm" value="正常" checked required />正常 <input type="radio" name="comm" value="異常" required />異常</label>
+      <label>推進系統: <input type="radio" name="engine" value="正常" checked required />正常 <input type="radio" name="engine" value="異常" required />異常</label>
+      <label>電源系統: <input type="radio" name="power" value="正常" checked required />正常 <input type="radio" name="power" value="異常" required />異常</label>
+      <label>自動制御系統: <input type="radio" name="autocontrol" value="正常" checked required />正常 <input type="radio" name="autocontrol" value="異常" required />異常</label>
+      <label>操縦装置: <input type="radio" name="controller" value="正常" checked required />正常 <input type="radio" name="controller" value="異常" required />異常</label>
+      <label>バッテリー・燃料: <input type="radio" name="battery" value="正常" checked required />正常 <input type="radio" name="battery" value="異常" required />異常</label>
 
       <h3>飛行記録</h3>
       <label>飛行年月日: <input type="date" name="fly_date" required /></label>
@@ -32,6 +39,12 @@
       <label>着陸時刻: <input type="time" name="end_time" id="end-time" /></label>
       <label>実飛行時間: <input type="text" id="actual-time-display" readonly /></label>
       <input type="hidden" name="actual_time_minutes" id="actual-time-minutes">
+
+      <h3>レポート（飛行中の不具合）</h3>
+      <label>飛行中の不具合: <input type="radio" name="flight_abnormal" value="正常" checked required />正常 <input type="radio" name="flight_abnormal" value="異常" required />異常</label>
+
+      <h3>日常点検（飛行後）</h3>
+      <label>飛行後点検: <input type="radio" name="aftercheck" value="正常" checked required />正常 <input type="radio" name="aftercheck" value="異常" required />異常</label>
 
       <button type="submit">この内容で保存</button>
     </form>
@@ -95,7 +108,8 @@
                     const el = form.elements[key];
                     if (el && data[key] !== null) {
                        if (el.type === 'radio') {
-                         form.querySelector(`input[name="${key}"][value="${data[key]}"]`).checked = true;
+                         const radio = form.querySelector(`input[name="${key}"][value="${data[key]}"]`);
+                         if (radio) radio.checked = true;
                        } else if(el.type === 'date') {
                          el.value = new Date(data[key]).toISOString().split('T')[0];
                        } else {
