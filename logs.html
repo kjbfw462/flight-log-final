@@ -15,7 +15,7 @@
         .pdf-export-area label { font-weight: 600; font-size: .9em; margin: 0; }
         .pdf-export-area input[type=date] { padding: .4em; border: 1px solid #ccc; border-radius: .3rem; }
         .pdf-export-area .green-btn {
-            margin-left: auto; background-color: #28a745;
+            margin-left: auto; background-color: var(--success-color);
             color: #fff; width: auto; font-size: 0.9em;
         }
     </style>
@@ -27,7 +27,6 @@
             <h1>飛行履歴一覧</h1>
             <a href="/form.html" class="blue-btn">新規日誌を作成</a>
         </div>
-        
         <div class="pdf-export-area">
             <label>飛行日期間:</label>
             <input type="date" id="start-date">
@@ -35,13 +34,11 @@
             <input type="date" id="end-date">
             <button id="pdf-export-btn" class="blue-btn green-btn">PDF出力</button>
         </div>
-
         <div id="logs-list-container" class="list-container"></div>
     </div>
     <script>
         const listContainer = document.getElementById('logs-list-container');
         const pdfExportBtn = document.getElementById('pdf-export-btn');
-
         window.addEventListener('load', async () => {
             try {
                 const res = await fetch('/api/flight_logs');
@@ -63,7 +60,6 @@
                 listContainer.innerHTML = `<p style="color:red; padding: 1em;">${err.message}</p>`;
             }
         });
-
         pdfExportBtn.addEventListener('click', () => {
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
