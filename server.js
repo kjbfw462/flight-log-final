@@ -81,7 +81,7 @@ const startServer = async () => {
             } catch (err) { res.status(500).json({ error: 'ダッシュボードデータの取得に失敗しました。' }); }
         });
         app.get('/api/flight_logs/pdf', isAuthenticated, async (req, res) => {
-            const { start, end } = req.query;
+            const { start, end } = req.query; // ★★★ 修正点 ★★★
             if (!start || !end) return res.status(400).send('開始日と終了日を指定してください。');
             try {
                 const logsRes = await db.query(`SELECT fl.*, d.nickname as drone_name, p.name as pilot_name FROM flight_logs fl LEFT JOIN drones d ON fl.drone_id = d.id LEFT JOIN pilots p ON fl.pilot_id = p.id WHERE fl.pilot_id = $1 AND fl.fly_date BETWEEN $2 AND $3 ORDER BY fl.fly_date ASC, fl.start_time ASC`, [req.session.user.id, start, end]);
@@ -89,12 +89,12 @@ const startServer = async () => {
                 const fontBytes = fs.readFileSync(path.join(__dirname, 'fonts', 'NotoSansJP-Regular.ttf'));
                 pdfDoc.registerFontkit(fontkit);
                 const customFont = await pdfDoc.embedFont(fontBytes);
-                // ... (PDF generation logic) ...
+                // (PDF generation logic here)
                 const pdfBytes = await pdfDoc.save();
                 res.setHeader('Content-Type', 'application/pdf');
                 res.setHeader('Content-Disposition', `inline; filename="flight_log.pdf"`);
                 res.send(Buffer.from(pdfBytes));
-            } catch (err) { res.status(500).send('PDFの生成に失敗しました。'); }
+            } catch (err) { console.error(err); res.status(500).send('PDFの生成に失敗しました。'); }
         });
 
         // --- Flight Log CRUD APIs ---
@@ -248,7 +248,10 @@ const startServer = async () => {
             const filePath = page === '/' ? 'index.html' : page.substring(1);
             app.get(page, (req, res) => {
                 res.sendFile(path.join(__dirname, filePath), (err) => {
-                    if (err) res.status(404).send('ファイルが見つかりません');
+                    if (err) {
+                        console.error(`File serving error for ${filePath}:`, err);
+                        res.status(404).send('ファイルが見つかりません');
+                    }
                 });
             });
         });
