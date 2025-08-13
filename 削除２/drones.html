@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機体一覧</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
+        <div class="header-actions">
+            <h1>機体一覧</h1>
+            <a href="/drone-form.html" class="blue-btn">機体を新規追加</a>
+        </div>
+        <div id="drones-list-container" class="list-container"></div>
+    </div>
+    <script>
+        window.addEventListener('load', async () => {
+            const listContainer = document.getElementById('drones-list-container');
+            try {
+                const res = await fetch('/api/drones');
+                if (!res.ok) throw new Error('読み込みに失敗しました');
+                const json = await res.json();
+                listContainer.innerHTML = '';
+                if (json.data.length === 0) {
+                    listContainer.innerHTML = '<p style="padding: 1em;">登録されている機体はありません。</p>';
+                    return;
+                }
+                json.data.forEach(drone => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.innerHTML = `<a href="/drone-form.html?id=${drone.id}">${drone.nickname || drone.model}</a>`;
+                    listContainer.appendChild(item);
+                });
+            } catch (err) {
+                listContainer.innerHTML = `<p style="color:red; padding: 1em;">${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

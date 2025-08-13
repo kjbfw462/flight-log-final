@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>ログイン</h1>
+        <form id="login-form">
+            <label>メールアドレス:</label>
+            <input type="email" name="email" required>
+            <label>パスワード:</label>
+            <input type="password" name="password" required>
+            <button type="submit">ログイン</button>
+        </form>
+        <div id="error-message" style="color: red; margin-top: 1em;"></div>
+    </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = Object.fromEntries(new FormData(form).entries());
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = '';
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || 'ログインに失敗しました');
+                }
+                window.location.href = '/';
+            } catch (err) {
+                errorMessage.textContent = err.message;
+            }
+        });
+    </script>
+</body>
+</html>

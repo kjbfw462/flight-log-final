@@ -9,9 +9,60 @@
 </head>
 <body>
     <div class="container">
-        <h1>ようこそ！</h1>
-        <p>フライトログへようこそ。上のメニューから操作を開始してください。</p>
-        <a href="/menu.html" class="blue-btn" style="width: auto;">メニューへ</a>
+        <h1>飛行実績</h1>
+        <div class="dashboard-card">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>当月日誌作成数</h3>
+                    <p><span class="value" id="monthly-logs">--</span><span class="unit">回</span></p>
+                </div>
+                <div class="stat-item">
+                    <h3>累計日誌作成数</h3>
+                    <p><span class="value" id="total-logs">--</span><span class="unit">回</span></p>
+                </div>
+            </div>
+            <div class="highlight-bar blue">
+                <span class="label">総飛行時間 ⏰</span>
+                <span class="value" id="total-flight-time">-- 時間 -- 分</span>
+            </div>
+            <div class="highlight-bar green">
+                <span class="label">飛行エリア 🗺️</span>
+                <span class="value" id="flight-areas">-- 箇所</span>
+            </div>
+        </div>
+
+        <h2>メニュー</h2>
+        <div class="menu-grid">
+            <a href="/logs.html" class="menu-card">
+                <div class="icon">📜</div>
+                <h3>飛行日誌管理</h3>
+            </a>
+            <a href="/menu.html" class="menu-card">
+                <div class="icon">⚙️</div>
+                <h3>各種マスタ管理</h3>
+            </a>
+        </div>
     </div>
+    <script>
+        window.addEventListener('load', async () => {
+            try {
+                const res = await fetch('/api/dashboard-stats');
+                if (!res.ok) throw new Error('統計データの読み込みに失敗');
+                const stats = await res.json();
+
+                document.getElementById('monthly-logs').textContent = stats.monthly_log_count;
+                document.getElementById('total-logs').textContent = stats.total_log_count;
+                document.getElementById('flight-areas').textContent = `${stats.flight_areas} 箇所`;
+                
+                const totalMinutes = stats.total_flight_minutes;
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                document.getElementById('total-flight-time').textContent = `${hours} 時間 ${minutes} 分`;
+
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メニュー</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .menu-list { list-style: none; padding: 0; }
+        .menu-list li { margin-bottom: 1em; }
+        .menu-list a { display: block; padding: 1em; background: white; border: 1px solid var(--border-color); border-radius: 8px; text-decoration: none; color: var(--text-color); font-weight: 500; }
+        .menu-list a:hover { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>メニュー</h1>
+        <ul class="menu-list">
+            <li><a href="/logs.html">飛行履歴一覧</a></li>
+            <li><a href="/drones.html">機体一覧</a></li>
+            <li><a href="/pilots.html">操縦者一覧</a></li>
+        </ul>
+        <a href="/" class="back-link">ダッシュボードに戻る</a>
+    </div>
+</body>
+</html>
