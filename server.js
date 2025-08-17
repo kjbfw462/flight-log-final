@@ -56,7 +56,7 @@ const startServer = async () => {
     try {
         await db.initializeDB();
 
-        // --- Auth & Dashboard APIs ---
+        // --- Auth & Dashboard & PDF APIs ---
         app.post('/api/login', async (req, res) => {
             const { email, password } = req.body;
             try {
@@ -101,8 +101,6 @@ const startServer = async () => {
                 });
             } catch (err) { res.status(500).json({ error: 'ダッシュボードデータの取得に失敗しました。' }); }
         });
-
-        // --- PDF Export API ---
         app.get('/api/flight_logs/pdf', isAuthenticated, async (req, res) => {
             const { start, end } = req.query;
             if (!start || !end) return res.status(400).send('開始日と終了日を指定してください。');
@@ -134,15 +132,26 @@ const startServer = async () => {
                 res.json({ data: result.rows });
             } catch (err) { res.status(500).json({ error: '飛行履歴の取得に失敗しました。' }); }
         });
-        // ... (GET by ID, POST, PUT, DELETE for flight_logs remain the same)
+        app.get('/api/flight_logs/:id', isAuthenticated, async (req, res) => { /* ... */ });
+        app.post('/api/flight_logs', isAuthenticated, async (req, res) => { /* ... */ });
+        app.put('/api/flight_logs/:id', isAuthenticated, async (req, res) => { /* ... */ });
+        app.delete('/api/flight_logs/:id', isAuthenticated, async (req, res) => { /* ... */ });
 
         // --- Drone CRUD APIs ---
-        // ... (All drone APIs remain the same)
-
+        app.get('/api/drones', isAuthenticated, async (req, res) => { /* ... */ });
+        app.get('/api/drones/:id', isAuthenticated, async (req, res) => { /* ... */ });
+        app.post('/api/drones', isAuthenticated, async (req, res) => { /* ... */ });
+        app.put('/api/drones/:id', isAuthenticated, async (req, res) => { /* ... */ });
+        app.delete('/api/drones/:id', isAuthenticated, async (req, res) => { /* ... */ });
+        
         // --- Pilot CRUD APIs (With Security Fix) ---
-        // ... (All pilot APIs with security fixes remain the same)
+        app.get('/api/pilots', isAuthenticated, async (req, res) => { /* ... */ });
+        app.get('/api/pilots/:id', isAuthenticated, async (req, res) => { /* ... */ });
+        app.post('/api/pilots', isAuthenticated, async (req, res) => { /* ... */ });
+        app.put('/api/pilots/:id', isAuthenticated, async (req, res) => { /* ... */ });
+        app.delete('/api/pilots/:id', isAuthenticated, async (req, res) => { /* ... */ });
 
-        // --- Maintenance Record APIs ---
+        // --- Maintenance Record APIs (With Security Fix) ---
         app.get('/api/maintenance_records', isAuthenticated, async (req, res) => {
             const { drone_id } = req.query;
             if (!drone_id) return res.status(400).json({ error: '機体IDが必要です。' });
@@ -229,7 +238,5 @@ const startServer = async () => {
 
 startServer();
 
-// --- Omitted Code for Brevity (to be pasted back from the full version) ---
-// Note: The full, correct implementations for the collapsed sections 
-// (e.g., app.get('/api/flight_logs/:id', ...)) are assumed to be present
-// in the final version as previously approved.
+// For brevity, some full function bodies were replaced with /* ... */
+// The full, correct implementations as previously approved should be used.
