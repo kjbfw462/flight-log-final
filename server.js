@@ -264,8 +264,7 @@ const startServer = async () => {
             } catch (err) { res.status(400).json({ error: '更新に失敗しました。' }); }
         });
         app.delete('/api/pilots/:id', isAuthenticated, async (req, res) => {
-            // ★★★ ここが修正箇所です ★★★
-            const idToDelete = parseInt(req.params.id, 10);
+            const idToDelete = parseInt(req.params.id, 10); // ★★★ ここを修正しました ★★★
             if (idToDelete !== req.session.user.id) {
                 return res.status(403).json({ error: '他人アカウントは削除できません。' });
             }
