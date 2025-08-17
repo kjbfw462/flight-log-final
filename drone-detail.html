@@ -4,146 +4,93 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>機体詳細</title>
-    <script src="/auth.js" defer></script>
     <link rel="stylesheet" href="/style.css">
-    <style>
-        .drone-header { margin-bottom: 2em; }
-        .tab-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5em; }
-        .tab-nav button {
-            padding: 0.8em 1.2em;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 1em;
-            color: var(--text-color);
-            border-bottom: 3px solid transparent;
-        }
-        .tab-nav button.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-            font-weight: 600;
-        }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-    </style>
 </head>
 <body>
     <div class="container">
         <a href="/drones.html" class="back-link">&lt; 機体一覧に戻る</a>
+        
+        <div id="error-display" style="color: red; padding: 1em; display: none;"></div>
 
-        <div id="drone-header" class="drone-header">
-            <h1 id="drone-name">読み込み中...</h1>
+        <div id="main-content">
+            <div class="header-actions">
+                <h1 id="drone-name-title">機体詳細</h1>
+                <a href="#" id="edit-button" class="blue-btn">この機体を編集する</a>
+            </div>
+            <div class="form-view-container">
+                <div class="form-group">
+                    <label>製造者</label>
+                    <p id="manufacturer"></p>
+                </div>
+                <div class="form-group">
+                    <label>型式</label>
+                    <p id="model"></p>
+                </div>
+                <div class="form-group">
+                    <label>種類</label>
+                    <p id="type"></p>
+                </div>
+                <div class="form-group">
+                    <label>製造番号</label>
+                    <p id="serial_number"></p>
+                </div>
+                <div class="form-group">
+                    <label>登録記号</label>
+                    <p id="registration_symbol"></p>
+                </div>
+                <div class="form-group">
+                    <label>機体の愛称</label>
+                    <p id="nickname"></p>
+                </div>
+                <div class="form-group">
+                    <label>登録有効期間</label>
+                    <p id="valid-period"></p>
+                </div>
+            </div>
         </div>
-
-        <div class="header-actions">
-            <nav class="tab-nav">
-                <button id="tab-flight-logs" class="active">飛行記録</button>
-                <button id="tab-maintenance">点検整備記録</button>
-            </nav>
-            <a href="#" id="add-maintenance-btn" class="blue-btn" style="display:none;">整備記録を追加</a>
-        </div>
-
-        <div id="flight-logs-content" class="tab-content active list-container"></div>
-        <div id="maintenance-content" class="tab-content list-container"></div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const droneId = params.get('id');
+            const errorDisplay = document.getElementById('error-display');
+            const mainContent = document.getElementById('main-content');
 
-<script>
-    const params = new URLSearchParams(window.location.search);
-    const droneId = params.get('id');
-
-    // DOM Elements
-    const droneNameEl = document.getElementById('drone-name');
-    const tabFlightLogs = document.getElementById('tab-flight-logs');
-    const tabMaintenance = document.getElementById('tab-maintenance');
-    const contentFlightLogs = document.getElementById('flight-logs-content');
-    const contentMaintenance = document.getElementById('maintenance-content');
-    const addMaintenanceBtn = document.getElementById('add-maintenance-btn');
-
-    // --- データ読み込み関数 ---
-    const loadFlightLogs = async () => {
-        contentFlightLogs.innerHTML = '<p>読み込み中...</p>';
-        try {
-            const res = await fetch(`/api/flight_logs?drone_id=${droneId}`);
-            if(!res.ok) throw new Error('飛行記録の読込に失敗');
-            const json = await res.json();
-            contentFlightLogs.innerHTML = '';
-            if (json.data.length === 0) {
-                contentFlightLogs.innerHTML = '<p>飛行記録はありません。</p>';
+            if (!droneId) {
+                mainContent.style.display = 'none';
+                errorDisplay.textContent = 'エラー: 機体IDが指定されていません。';
+                errorDisplay.style.display = 'block';
                 return;
             }
-            json.data.forEach(log => {
-                const item = document.createElement('div');
-                item.className = 'list-item';
-                const logDate = log.fly_date ? new Date(log.fly_date).toLocaleDateString() : '日付未設定';
-                item.innerHTML = `<a href="/form.html?id=${log.id}">${logDate}: ${log.start_location || '場所未設定'}</a>`;
-                contentFlightLogs.appendChild(item);
-            });
-        } catch (err) { contentFlightLogs.innerHTML = `<p style="color:red;">${err.message}</p>`; }
-    };
 
-    const loadMaintenanceRecords = async () => {
-        contentMaintenance.innerHTML = '<p>読み込み中...</p>';
-        try {
-            const res = await fetch(`/api/maintenance_records?drone_id=${droneId}`);
-            if(!res.ok) throw new Error('整備記録の読込に失敗');
-            const json = await res.json();
-            contentMaintenance.innerHTML = '';
-            if (json.data.length === 0) {
-                contentMaintenance.innerHTML = '<p>点検整備記録はありません。</p>';
-                return;
+            try {
+                const res = await fetch(`/api/drones/${droneId}`);
+                if (!res.ok) throw new Error('機体情報の読み込みに失敗しました。');
+                
+                const json = await res.json();
+                const drone = json.data;
+
+                document.getElementById('drone-name-title').textContent = drone.nickname || drone.model;
+                document.getElementById('manufacturer').textContent = drone.manufacturer || '未設定';
+                document.getElementById('model').textContent = drone.model || '未設定';
+                document.getElementById('type').textContent = drone.type || '未設定';
+                document.getElementById('serial_number').textContent = drone.serial_number || '未設定';
+                document.getElementById('registration_symbol').textContent = drone.registration_symbol || '未設定';
+                document.getElementById('nickname').textContent = drone.nickname || '未設定';
+                
+                const startDate = drone.valid_period_start ? new Date(drone.valid_period_start).toLocaleDateString() : '未設定';
+                const endDate = drone.valid_period_end ? new Date(drone.valid_period_end).toLocaleDateString() : '未設定';
+                document.getElementById('valid-period').textContent = `${startDate} 〜 ${endDate}`;
+
+                document.getElementById('edit-button').href = `/drone-form.html?id=${drone.id}`;
+
+            } catch (err) {
+                // ★★★ 変更点(2): エラー発生時はメインコンテンツを隠し、エラー領域にメッセージを表示 ★★★
+                mainContent.style.display = 'none';
+                errorDisplay.textContent = `エラー: ${err.message}`;
+                errorDisplay.style.display = 'block';
             }
-            json.data.forEach(rec => {
-                const item = document.createElement('div');
-                item.className = 'list-item';
-                const recDate = rec.maintenance_date ? new Date(rec.maintenance_date).toLocaleDateString() : '日付未設定';
-                const type = rec.is_maker_maintenance ? 'メーカー点検' : '自己点検';
-                item.innerHTML = `<a href="/maintenance-form.html?id=${rec.id}">${recDate}: ${type} - ${rec.description || '詳細未入力'}</a>`;
-                contentMaintenance.appendChild(item);
-            });
-        } catch (err) { contentMaintenance.innerHTML = `<p style="color:red;">${err.message}</p>`; }
-    };
-
-    // --- 初期化処理 ---
-    window.addEventListener('load', async () => {
-        if (!droneId) {
-            document.body.innerHTML = '<div class="container"><p style="color:red;">機体IDが指定されていません。</p></div>';
-            return;
-        }
-
-        // ページ上部に機体名を表示
-        try {
-            const res = await fetch(`/api/drones/${droneId}`);
-            const json = await res.json();
-            droneNameEl.textContent = json.data.nickname || json.data.model;
-        } catch (e) {
-            droneNameEl.textContent = '機体情報の取得に失敗';
-        }
-        
-        // 新規整備記録追加ボタンのリンクを設定
-        addMaintenanceBtn.href = `/maintenance-form.html?drone_id=${droneId}`;
-        
-        // タブのクリックイベント
-        tabFlightLogs.addEventListener('click', () => {
-            tabFlightLogs.classList.add('active');
-            tabMaintenance.classList.remove('active');
-            contentFlightLogs.classList.add('active');
-            contentMaintenance.classList.remove('active');
-            addMaintenanceBtn.style.display = 'none';
-            loadFlightLogs();
         });
-
-        tabMaintenance.addEventListener('click', () => {
-            tabMaintenance.classList.add('active');
-            tabFlightLogs.classList.remove('active');
-            contentMaintenance.classList.add('active');
-            contentFlightLogs.classList.remove('active');
-            addMaintenanceBtn.style.display = 'inline-block';
-            loadMaintenanceRecords();
-        });
-
-        // 初期表示
-        loadFlightLogs();
-    });
-</script>
+    </script>
 </body>
 </html>

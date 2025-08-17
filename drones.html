@@ -31,9 +31,8 @@
                 json.data.forEach(drone => {
                     const item = document.createElement('div');
                     item.className = 'list-item';
-                    //
-                    // ★★★ ここのリンク先を修正しました ★★★
-                    //
+                    // ★★★ ここが変更点です ★★★
+                    // リンク先を詳細閲覧ページに変更しました。
                     item.innerHTML = `<a href="/drone-detail.html?id=${drone.id}">${drone.nickname || drone.model}</a>`;
                     listContainer.appendChild(item);
                 });

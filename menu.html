@@ -3,25 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>各種マスタ管理</title>
+    <title>メニュー</title>
     <script src="/auth.js" defer></script>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back-link">&lt; ダッシュボードに戻る</a>
-        <h1>各種マスタ管理</h1>
+        <div class="header-actions">
+            <h1>飛行実績</h1>
+            <button id="logout-button" class="secondary-btn">ログアウト</button>
+        </div>
+        <div class="stats-grid">
+             </div>
+
+        <h2>メニュー</h2>
         <div class="menu-grid">
-            <a href="/drones.html" class="menu-card">
-                <div class="icon">✈️</div>
-                <h3>機体一覧</h3>
+            <a href="/logs.html" class="menu-item" id="flight-log-link">
+                <img src="/images/logbook-icon.png" alt="日誌アイコン">
+                <span>飛行日誌管理</span>
             </a>
-            
-            <a href="/my-profile.html" class="menu-card">
-                <div class="icon">👤</div>
-                <h3>プロフィール編集</h3>
+            <a href="/drones.html" class="menu-item" id="master-data-link">
+                <img src="/images/drone-icon.png" alt="マスター管理アイコン">
+                <span>各種マスタ管理</span>
             </a>
-            
         </div>
     </div>
 </body>
