@@ -342,7 +342,8 @@ const startServer = async () => {
             '/', '/index.html', '/login.html', '/logs.html',
             '/menu.html', '/drones.html', '/drone-form.html',
             '/my-profile.html', '/pilot-form.html',
-            '/drone-detail.html', '/maintenance-form.html'
+            '/drone-detail.html', '/maintenance-form.html',
+            '/form.html'
         ];
         pages.forEach(page => {
             const filePath = page === '/' ? 'index.html' : page.substring(1);
