@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイプロフィール</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .profile-card {
+            background: #fff;
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .profile-card p {
+            margin: 0 0 1em;
+            font-size: 1.1em;
+        }
+        .profile-card .blue-btn {
+            margin-top: 1em;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/menu.html" class="back-link">&lt; メニューに戻る</a>
+        <h1>マイプロフィール</h1>
+        <div id="profile-view" class="profile-card">
+            <p><strong>氏名:</strong> <span id="profile-name">読み込み中...</span></p>
+            <p><strong>メールアドレス:</strong> <span id="profile-email">読み込み中...</span></p>
+            <a href="#" id="edit-profile-btn" class="blue-btn" style="display:none;">プロフィールを編集する</a>
+        </div>
+    </div>
+    <script>
+        window.addEventListener('load', async () => {
+            const profileView = document.getElementById('profile-view');
+            try {
+                // まず、現在ログイン中のユーザーIDを取得
+                const userRes = await fetch('/api/current-user');
+                if (!userRes.ok) throw new Error('ユーザーセッションの取得に失敗しました。');
+                const userJson = await userRes.json();
+                const userId = userJson.user?.id;
+
+                if (!userId) throw new Error('ログインしていません。');
+
+                // 取得したIDを使って、自身の詳細なプロフィール情報を取得
+                const profileRes = await fetch(`/api/pilots/${userId}`);
+                if (!profileRes.ok) throw new Error('プロフィール情報の取得に失敗しました。');
+                const profileJson = await profileRes.json();
+                const pilot = profileJson.data;
+
+                // 画面に情報を表示
+                document.getElementById('profile-name').textContent = pilot.name;
+                document.getElementById('profile-email').textContent = pilot.email;
+                
+                // 編集ボタンのリンク先を設定して表示
+                const editBtn = document.getElementById('edit-profile-btn');
+                editBtn.href = `/pilot-form.html?id=${pilot.id}`;
+                editBtn.style.display = 'inline-block';
+
+            } catch (err) {
+                profileView.innerHTML = `<p style="color:red;">${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
