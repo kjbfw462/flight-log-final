@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: flight-log-final
+    env: node
+    buildCommand: "yarn install"
+    startCommand: "node server.js"
+    headers:
+      - path: "/*"
+        name: "Content-Security-Policy"
+        value: "font-src 'self' data;"
