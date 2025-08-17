@@ -45,23 +45,17 @@ const isAuthenticated = (req, res, next) => {
     res.status(401).json({ error: '認証されていません。' });
 };
 
-// ★★★ ここにヘルスチェックAPIを追加しました ★★★
+// --- ヘルスチェックAPI ---
 app.get('/api/health', (req, res) => {
-    // このAPIは、常に「元気です」と200 OKを返す
     res.status(200).json({ status: 'ok' });
 });
-
 
 // --- サーバー起動プロセス ---
 const startServer = async () => {
     try {
         await db.initializeDB();
 
-        // (Auth, Dashboard, PDF, and all CRUD APIs follow here...)
-        // (API部分は変更がないため、ここでは省略しています)
-        // (実際のファイルには、全てのAPIが含まれている必要があります)
-
-        // --- Auth & Dashboard APIs ---
+        // --- Auth & Dashboard & PDF APIs ---
         app.post('/api/login', async (req, res) => {
             const { email, password } = req.body;
             try {
@@ -106,10 +100,8 @@ const startServer = async () => {
                 });
             } catch (err) { res.status(500).json({ error: 'ダッシュボードデータの取得に失敗しました。' }); }
         });
-
-        // --- PDF Export API ---
         app.get('/api/flight_logs/pdf', isAuthenticated, async (req, res) => {
-            const { start, end } = req.query;
+             const { start, end } = req.query;
             if (!start || !end) return res.status(400).send('開始日と終了日を指定してください。');
             try {
                 const logsRes = await db.query(`SELECT fl.*, d.nickname as drone_name, p.name as pilot_name FROM flight_logs fl LEFT JOIN drones d ON fl.drone_id = d.id LEFT JOIN pilots p ON fl.pilot_id = p.id WHERE fl.pilot_id = $1 AND fl.fly_date BETWEEN $2 AND $3 ORDER BY fl.fly_date ASC, fl.start_time ASC`, [req.session.user.id, start, end]);
@@ -272,7 +264,8 @@ const startServer = async () => {
             } catch (err) { res.status(400).json({ error: '更新に失敗しました。' }); }
         });
         app.delete('/api/pilots/:id', isAuthenticated, async (req, res) => {
-            const idToDelete = parseInt(req.params..id, 10);
+            // ★★★ ここが修正箇所です ★★★
+            const idToDelete = parseInt(req.params.id, 10);
             if (idToDelete !== req.session.user.id) {
                 return res.status(403).json({ error: '他人アカウントは削除できません。' });
             }
