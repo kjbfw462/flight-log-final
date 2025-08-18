@@ -11,8 +11,7 @@
     <div class="container">
         <div class="header-actions">
             <h1>飛行実績</h1>
-            <button id="logout-button" class="secondary-btn">ログアウト</button>
-        </div>
+            </div>
         <div class="stats-grid">
              </div>
 
@@ -22,27 +21,14 @@
                 <img src="logbook-icon.png" alt="日誌アイコン">
                 <span>飛行日誌管理</span>
             </a>
-            <a href="/drones.html" class="menu-item">
-                <img src="drone-icon.png" alt="機体管理アイコン">
-                <span>機体管理</span>
-            </a>
-            <a href="/pilots.html" class="menu-item">
-                <img src="pilot-icon.png" alt="操縦者管理アイコン">
-                <span>操縦者管理</span>
+            <a href="/master-menu.html" class="menu-item">
+                <img src="drone-icon.png" alt="マスター管理アイコン">
+                <span>各種マスタ管理</span>
             </a>
         </div>
     </div>
     <script>
-        // JS for stats and logout button
-        document.addEventListener('DOMContentLoaded', async () => {
-            const logoutButton = document.getElementById('logout-button');
-            if(logoutButton) {
-                logoutButton.addEventListener('click', async () => {
-                    await fetch('/api/logout', { method: 'POST' });
-                    window.location.href = '/login.html';
-                });
-            }
-        });
+        // auth.jsと重複していたログアウトボタン用のJavaScriptは削除しました
     </script>
 </body>
 </html>

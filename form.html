@@ -1,37 +1,48 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    </head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飛行日誌 記録フォーム</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/auth.js" defer></script>
+</head>
 <body>
     <div class="container">
-        <form id="flight-log-form">
-            <button type="submit" class="blue-btn">この内容で保存</button>
-        </form>
+        <div id="error-display" style="color: red; padding: 1em; display: none;"></div>
+
+        <div id="main-form">
+            <a href="/logs.html" class="back-link">&lt; 機体選択に戻る</a>
+            <h1>飛行記録・日常点検記録</h1>
+            <form id="flight-log-form">
+                <button type="submit" class="blue-btn">この内容で保存</button>
+            </form>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // ★★★ ここからが追加ロジックです ★★★
             const params = new URLSearchParams(window.location.search);
             const droneId = params.get('drone_id');
-            const logId = params.get('id'); // 編集機能のためにidも取得
+            const logId = params.get('id');
+            const errorDisplay = document.getElementById('error-display');
+            const mainForm = document.getElementById('main-form');
 
+            // エラー時にページ全体を上書きせず、エラー表示場所だけを使うように修正しました
             if (!droneId && !logId) {
-                document.querySelector('.container').innerHTML = '<h1>エラー: 操作対象の機体が指定されていません。</h1>';
+                mainForm.style.display = 'none'; // フォームを隠す
+                errorDisplay.textContent = 'エラー: 操作対象の機体が指定されていません。メニューからやり直してください。';
+                errorDisplay.style.display = 'block'; // エラーメッセージを表示する
                 return;
             }
 
             const form = document.getElementById('flight-log-form');
-
-            // (既存の編集時データ読み込みロジックは省略)
-
+            
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(form);
                 const data = Object.fromEntries(formData.entries());
 
-                // ★★★ ここが変更点です ★★★
-                // 新規作成時にdrone_idをデータに含めます
                 if (!logId) {
                     data.drone_id = droneId;
                 }
@@ -48,8 +59,6 @@
 
                     if (!res.ok) throw new Error('保存に失敗しました。');
                     
-                    // ★★★ 成功時の遷移先を変更しました ★★★
-                    // 元の機体選択画面に戻るのが自然なためlogs.htmlへ
                     window.location.href = '/logs.html';
 
                 } catch (err) {
