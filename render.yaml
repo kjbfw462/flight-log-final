@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: flight-log-final
+    env: node
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    healthCheckPath: /api/health
+    headers:
+      - path: "/*"
+        name: "Content-Security-Policy"
+        value: "font-src 'self' data;"
