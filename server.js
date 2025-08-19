@@ -6,23 +6,10 @@ const { PDFDocument, rgb } = require('pdf-lib');
 const fontkit = require('fontkit');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
-const multer = require('multer');
 
-// --- アプリケーションの定義 ---
 const app = express();
 const port = process.env.PORT || 3000;
 
-// --- ファイルアップロードの設定 ---
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)){ fs.mkdirSync(uploadDir); }
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => { cb(null, uploadDir); },
-    filename: (req, file, cb) => { cb(null, `${Date.now()}-${file.originalname}`); }
-});
-const upload = multer({ storage: storage });
-app.use('/uploads', express.static(uploadDir));
-
-// --- ミドルウェアの設定 ---
 app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -39,23 +26,16 @@ if (app.get('env') === 'production') {
 }
 app.use(session(sess));
 
-// --- 認証チェック ---
 const isAuthenticated = (req, res, next) => {
     if (req.session.user && req.session.user.id) return next();
     res.status(401).json({ error: '認証されていません。' });
 };
 
-// --- ヘルスチェックAPI ---
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
-});
-
-// --- サーバー起動プロセス ---
 const startServer = async () => {
     try {
         await db.initializeDB();
 
-        // --- Auth & Dashboard & PDF APIs ---
+        // --- Auth & Dashboard APIs ---
         app.post('/api/login', async (req, res) => {
             const { email, password } = req.body;
             try {
@@ -100,34 +80,100 @@ const startServer = async () => {
                 });
             } catch (err) { res.status(500).json({ error: 'ダッシュボードデータの取得に失敗しました。' }); }
         });
+
+        // --- PDF Export API ---
         app.get('/api/flight_logs/pdf', isAuthenticated, async (req, res) => {
-             const { start, end } = req.query;
+            const { start, end } = req.query;
             if (!start || !end) return res.status(400).send('開始日と終了日を指定してください。');
             try {
                 const logsRes = await db.query(`SELECT fl.*, d.nickname as drone_name, p.name as pilot_name FROM flight_logs fl LEFT JOIN drones d ON fl.drone_id = d.id LEFT JOIN pilots p ON fl.pilot_id = p.id WHERE fl.pilot_id = $1 AND fl.fly_date BETWEEN $2 AND $3 ORDER BY fl.fly_date ASC, fl.start_time ASC`, [req.session.user.id, start, end]);
+                
                 const pdfDoc = await PDFDocument.create();
                 const fontBytes = fs.readFileSync(path.join(__dirname, 'fonts', 'NotoSansJP-Regular.ttf'));
                 pdfDoc.registerFontkit(fontkit);
                 const customFont = await pdfDoc.embedFont(fontBytes);
-                // (PDF generation logic)
+                
+                let page = pdfDoc.addPage();
+                const { width, height } = page.getSize();
+                let y = height - 40;
+
+                const drawText = (text, x, _y, size = 10) => {
+                    if (text === null || text === undefined) text = '';
+                    page.drawText(text.toString(), { x, y: _y, font: customFont, size, color: rgb(0, 0, 0) });
+                };
+
+                drawText('飛行日誌', 40, y, 24);
+                y -= 40;
+
+                if (logsRes.rows.length === 0) {
+                    drawText('対象期間の飛行記録はありません。', 50, y);
+                } else {
+                    logsRes.rows.forEach((log, index) => {
+                        if (index > 0) {
+                            page = pdfDoc.addPage();
+                            y = height - 40;
+                        }
+                        
+                        drawText(`Page ${index + 1} of ${logsRes.rows.length}`, width - 100, y + 20, 8);
+
+                        drawText('飛行記録', 50, y, 16);
+                        y -= 25;
+                        drawText(`飛行年月日: ${new Date(log.fly_date).toLocaleDateString()}`, 60, y);
+                        drawText(`操縦者: ${log.pilot_name || ''}`, 300, y);
+                        y -= 20;
+                        drawText(`機体: ${log.drone_name || ''}`, 60, y);
+                        y -= 20;
+                        drawText(`離陸場所: ${log.start_location || ''}`, 60, y);
+                        drawText(`着陸場所: ${log.end_location || ''}`, 300, y);
+                        y -= 20;
+                        drawText(`離陸時刻: ${log.start_time || ''}`, 60, y);
+                        drawText(`着陸時刻: ${log.end_time || ''}`, 300, y);
+                        y -= 20;
+                        drawText(`実飛行時間: ${log.actual_time_minutes || 0}分`, 300, y);
+                        y -= 30;
+
+                        drawText('日常点検（飛行前）', 50, y, 16);
+                        y -= 25;
+                        drawText(`点検年月日: ${new Date(log.precheck_date).toLocaleDateString()}`, 60, y);
+                        drawText(`点検者: ${log.inspector || ''}`, 300, y);
+                        y -= 20;
+                        drawText(`実施場所: ${log.place || ''}`, 60, y);
+                        y -= 20;
+                        drawText(`機体全般: ${log.body || ''}`, 60, y);
+                        drawText(`プロペラ: ${log.propeller || ''}`, 180, y);
+                        drawText(`フレーム: ${log.frame || ''}`, 300, y);
+                        y -= 20;
+                        drawText(`通信系統: ${log.comm || ''}`, 60, y);
+                        drawText(`推進系統: ${log.engine || ''}`, 180, y);
+                        drawText(`電源系統: ${log.power || ''}`, 300, y);
+                        y -= 20;
+                        drawText(`自動制御系統: ${log.autocontrol || ''}`, 60, y);
+                        drawText(`操縦装置: ${log.controller || ''}`, 180, y);
+                        drawText(`バッテリー: ${log.battery || ''}`, 300, y);
+                        y -= 30;
+                        
+                        drawText('レポート（飛行中の不具合）', 50, y, 16);
+                        y -= 25;
+                        drawText(`${log.flight_abnormal || ''}`, 60, y);
+                        y -= 30;
+
+                        drawText('日常点検（飛行後）', 50, y, 16);
+                        y -= 25;
+                        drawText(`${log.aftercheck || ''}`, 60, y);
+                    });
+                }
+                
+                const pdfBytes = await pdfDoc.save();
                 res.setHeader('Content-Type', 'application/pdf');
                 res.setHeader('Content-Disposition', `inline; filename="flight_log.pdf"`);
-                res.send(Buffer.from(await pdfDoc.save()));
+                res.send(Buffer.from(pdfBytes));
             } catch (err) { console.error(err); res.status(500).send('PDFの生成に失敗しました。'); }
         });
 
         // --- Flight Log CRUD APIs ---
         app.get('/api/flight_logs', isAuthenticated, async (req, res) => {
             try {
-                const { drone_id } = req.query;
-                let query = `SELECT fl.*, d.nickname as drone_nickname FROM flight_logs fl LEFT JOIN drones d ON fl.drone_id = d.id WHERE fl.pilot_id = $1`;
-                const params = [req.session.user.id];
-                if (drone_id) {
-                    query += ` AND fl.drone_id = $2`;
-                    params.push(drone_id);
-                }
-                query += ` ORDER BY fl.fly_date DESC, fl.id DESC`;
-                const result = await db.query(query, params);
+                const result = await db.query(`SELECT fl.*, d.nickname as drone_nickname FROM flight_logs fl LEFT JOIN drones d ON fl.drone_id = d.id WHERE fl.pilot_id = $1 ORDER BY fl.fly_date DESC, fl.id DESC`, [req.session.user.id]);
                 res.json({ data: result.rows });
             } catch (err) { res.status(500).json({ error: '飛行履歴の取得に失敗しました。' }); }
         });
@@ -217,16 +263,16 @@ const startServer = async () => {
                 res.status(204).send();
             } catch (err) { res.status(500).json({ error: '削除に失敗しました。' }); }
         });
-        
-        // --- Pilot CRUD APIs (With Security Fix) ---
+
+        // --- Pilot CRUD APIs ---
         app.get('/api/pilots', isAuthenticated, async (req, res) => {
-            res.status(403).json({ error: 'この機能は使用できません。' });
+            try {
+               const result = await db.query(`SELECT p.id, p.name FROM pilots p ORDER BY p.name ASC`);
+               res.json({ data: result.rows });
+           } catch (err) { res.status(500).json({ error: '操縦者一覧の取得に失敗しました。' }); }
         });
         app.get('/api/pilots/:id', isAuthenticated, async (req, res) => {
             try {
-                if (parseInt(req.params.id, 10) !== req.session.user.id) {
-                    return res.status(403).json({ error: '権限がありません。' });
-                }
                 const pilotRes = await db.query("SELECT id, name, name_kana, email, phone, postal_code, prefecture, address1, address2, has_license, initial_flight_minutes FROM pilots WHERE id = $1", [req.params.id]);
                 if (pilotRes.rows.length === 0) return res.status(404).json({ error: '操縦者が見つかりません。' });
                 const pilot = pilotRes.rows[0];
@@ -249,102 +295,28 @@ const startServer = async () => {
         });
         app.put('/api/pilots/:id', isAuthenticated, async (req, res) => {
             const p = req.body;
-            const idToUpdate = parseInt(req.params.id, 10);
-            if (idToUpdate !== req.session.user.id) {
-                return res.status(403).json({ error: '権限がありません。' });
-            }
+            const { id } = req.params;
             try {
                 if (p.password) {
                     const hash = await bcrypt.hash(p.password, 10);
-                    await db.query(`UPDATE pilots SET name=$1, name_kana=$2, email=$3, phone=$4, postal_code=$5, prefecture=$6, address1=$7, address2=$8, has_license=$9, initial_flight_minutes=$10, password=$11 WHERE id=$12`, [p.name, p.name_kana, p.email, p.phone, p.postal_code, p.prefecture, p.address1, p.address2, p.has_license, p.initial_flight_minutes, hash, idToUpdate]);
+                    await db.query(`UPDATE pilots SET name=$1, name_kana=$2, email=$3, phone=$4, postal_code=$5, prefecture=$6, address1=$7, address2=$8, has_license=$9, initial_flight_minutes=$10, password=$11 WHERE id=$12`, [p.name, p.name_kana, p.email, p.phone, p.postal_code, p.prefecture, p.address1, p.address2, p.has_license, p.initial_flight_minutes, hash, id]);
                 } else {
-                    await db.query(`UPDATE pilots SET name=$1, name_kana=$2, email=$3, phone=$4, postal_code=$5, prefecture=$6, address1=$7, address2=$8, has_license=$9, initial_flight_minutes=$10 WHERE id=$11`, [p.name, p.name_kana, p.email, p.phone, p.postal_code, p.prefecture, p.address1, p.address2, p.has_license, p.initial_flight_minutes, idToUpdate]);
+                    await db.query(`UPDATE pilots SET name=$1, name_kana=$2, email=$3, phone=$4, postal_code=$5, prefecture=$6, address1=$7, address2=$8, has_license=$9, initial_flight_minutes=$10 WHERE id=$11`, [p.name, p.name_kana, p.email, p.phone, p.postal_code, p.prefecture, p.address1, p.address2, p.has_license, p.initial_flight_minutes, id]);
                 }
-                res.json({ id: idToUpdate });
-            } catch (err) { res.status(400).json({ error: '更新に失敗しました。' }); }
-        });
-        app.delete('/api/pilots/:id', isAuthenticated, async (req, res) => {
-            const idToDelete = parseInt(req.params.id, 10); // ★★★ ここを修正しました ★★★
-            if (idToDelete !== req.session.user.id) {
-                return res.status(403).json({ error: '他人アカウントは削除できません。' });
-            }
-            try {
-                await db.query('DELETE FROM pilots WHERE id = $1', [idToDelete]);
-                req.session.destroy(err => {
-                    if (err) { return res.status(500).json({ error: 'セッションの削除に失敗しました。'});}
-                    res.clearCookie('connect.sid').status(204).send();
-                });
-            } catch (err) { res.status(500).json({ error: '削除に失敗しました。' }); }
-        });
-
-        // --- Maintenance Record APIs (With Security Fix) ---
-        app.get('/api/maintenance_records', isAuthenticated, async (req, res) => {
-            const { drone_id } = req.query;
-            if (!drone_id) return res.status(400).json({ error: '機体IDが必要です。' });
-            try {
-                const droneCheck = await db.query('SELECT id FROM drones WHERE id = $1 AND pilot_id = $2', [drone_id, req.session.user.id]);
-                if (droneCheck.rows.length === 0) return res.status(403).json({ error: '権限がありません。' });
-                const result = await db.query('SELECT * FROM maintenance_records WHERE drone_id = $1 ORDER BY maintenance_date DESC', [drone_id]);
-                res.json({ data: result.rows });
-            } catch (err) { res.status(500).json({ error: '点検整備記録の取得に失敗しました。' }); }
-        });
-        app.get('/api/maintenance_records/:id', isAuthenticated, async (req, res) => {
-            try {
-                const result = await db.query(`SELECT mr.* FROM maintenance_records mr JOIN drones d ON mr.drone_id = d.id WHERE mr.id = $1 AND d.pilot_id = $2`, [req.params.id, req.session.user.id]);
-                if (result.rows.length === 0) return res.status(404).json({ error: '記録が見つからないか、権限がありません。' });
-                res.json({ data: result.rows[0] });
-            } catch (err) { res.status(500).json({ error: '記録の取得に失敗しました。' }); }
-        });
-        app.post('/api/maintenance_records', isAuthenticated, upload.single('attachment'), async (req, res) => {
-            const data = { ...req.body };
-            if (req.file) data.attachment_path = `/uploads/${req.file.filename}`;
-            data.is_maker_maintenance = data.is_maker_maintenance === 'true';
-            try {
-                const droneCheck = await db.query('SELECT id FROM drones WHERE id = $1 AND pilot_id = $2', [data.drone_id, req.session.user.id]);
-                if (droneCheck.rows.length === 0) return res.status(403).json({ error: '権限がありません。' });
-                delete data.id;
-                for (const key in data) { if (data[key] === '') data[key] = null; }
-                const fields = Object.keys(data);
-                const values = Object.values(data);
-                const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
-                const result = await db.query(`INSERT INTO maintenance_records (${fields.join(',')}) VALUES (${placeholders}) RETURNING id`, values);
-                res.status(201).json({ id: result.rows[0].id });
-            } catch (err) { res.status(400).json({ error: '保存に失敗しました。' }); }
-        });
-        app.put('/api/maintenance_records/:id', isAuthenticated, upload.single('attachment'), async (req, res) => {
-            const data = { ...req.body };
-            const { id } = req.params;
-            if (req.file) data.attachment_path = `/uploads/${req.file.filename}`;
-            data.is_maker_maintenance = data.is_maker_maintenance === 'true';
-            try {
-                const checkRes = await db.query(`SELECT d.id FROM drones d JOIN maintenance_records mr ON d.id = mr.drone_id WHERE mr.id = $1 AND d.pilot_id = $2`, [id, req.session.user.id]);
-                if (checkRes.rows.length === 0) return res.status(403).json({ error: '権限がありません。' });
-                delete data.id;
-                for (const key in data) { if (data[key] === '') data[key] = null; }
-                const fields = Object.keys(data).map((k, i) => `"${k}" = $${i + 1}`).join(', ');
-                const values = Object.values(data);
-                await db.query(`UPDATE maintenance_records SET ${fields} WHERE id = $${values.length + 1}`, [...values, id]);
                 res.json({ id });
             } catch (err) { res.status(400).json({ error: '更新に失敗しました。' }); }
         });
-        app.delete('/api/maintenance_records/:id', isAuthenticated, async (req, res) => {
+        app.delete('/api/pilots/:id', isAuthenticated, async (req, res) => {
+            const pilotIdToDelete = parseInt(req.params.id, 10);
+            if (pilotIdToDelete === req.session.user.id) { return res.status(403).json({ error: '自分自身のアカウントは削除できません。' }); }
             try {
-                const checkRes = await db.query(`SELECT d.id FROM drones d JOIN maintenance_records mr ON d.id = mr.drone_id WHERE mr.id = $1 AND d.pilot_id = $2`, [req.params.id, req.session.user.id]);
-                if (checkRes.rows.length === 0) return res.status(403).json({ error: '権限がありません。' });
-                const result = await db.query('DELETE FROM maintenance_records WHERE id = $1', [req.params.id]);
-                if (result.rowCount === 0) return res.status(404).json({ error: '削除対象のデータが見つかりません。' });
+                await db.query('DELETE FROM pilots WHERE id = $1', [pilotIdToDelete]);
                 res.status(204).send();
-            } catch (err) { res.status(500).json({ error: '削除に失敗しました。'}); }
+            } catch (err) { res.status(500).json({ error: '削除に失敗しました。' }); }
         });
-
+        
         // --- HTML Page Serving ---
-        const pages = [
-            '/', '/index.html', '/login.html', '/logs.html',
-            '/menu.html', '/drones.html', '/drone-form.html',
-            '/my-profile.html', '/pilot-form.html',
-            '/drone-detail.html', '/maintenance-form.html',
-            '/form.html'
-        ];
+        const pages = ['/', '/index.html', '/login.html', '/logs.html', '/menu.html', '/form.html', '/drones.html', '/drone-form.html', '/pilots.html', '/pilot-form.html'];
         pages.forEach(page => {
             const filePath = page === '/' ? 'index.html' : page.substring(1);
             app.get(page, (req, res) => {

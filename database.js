@@ -18,30 +18,10 @@ const initializeDB = async () => {
   try {
     await client.connect();
     console.log('データベースに正常に接続しました。');
-
-    // --- 既存のテーブル (変更なし) ---
     await client.query(`CREATE TABLE IF NOT EXISTS pilots (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, name_kana VARCHAR(100), postal_code VARCHAR(20), prefecture VARCHAR(50), address1 VARCHAR(255), address2 VARCHAR(255), email VARCHAR(100) UNIQUE NOT NULL, phone VARCHAR(30), has_license BOOLEAN DEFAULT false, initial_flight_minutes INTEGER DEFAULT 0, password TEXT NOT NULL)`);
     await client.query(`CREATE TABLE IF NOT EXISTS drones (id SERIAL PRIMARY KEY, manufacturer TEXT, model TEXT NOT NULL, type TEXT, serial_number TEXT, registration_symbol TEXT, valid_period_start DATE, valid_period_end DATE, nickname TEXT, pilot_id INTEGER NOT NULL REFERENCES pilots(id) ON DELETE CASCADE)`);
     await client.query(`CREATE TABLE IF NOT EXISTS flight_logs (id SERIAL PRIMARY KEY, precheck_date DATE, inspector TEXT, place TEXT, body TEXT, propeller TEXT, frame TEXT, comm TEXT, engine TEXT, power TEXT, autocontrol TEXT, controller TEXT, battery TEXT, fly_date DATE, goal TEXT, form TEXT, start_location TEXT, end_location TEXT, start_time TIME, end_time TIME, actual_time_minutes INTEGER, flight_abnormal TEXT, aftercheck TEXT, copilot_name TEXT, drone_id INTEGER NOT NULL REFERENCES drones(id) ON DELETE RESTRICT, pilot_id INTEGER NOT NULL REFERENCES pilots(id) ON DELETE CASCADE)`);
     
-    // ★★★ ここからが修正箇所です ★★★
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS maintenance_records (
-        id SERIAL PRIMARY KEY,
-        drone_id INTEGER NOT NULL REFERENCES drones(id) ON DELETE CASCADE,
-        maintenance_date DATE NOT NULL,
-        total_flight_minutes INTEGER,
-        implementer TEXT,
-        location TEXT,
-        description TEXT,
-        reason TEXT,
-        is_maker_maintenance BOOLEAN DEFAULT false,
-        attachment_path TEXT, -- ファイルパスを保存するカラムを追加
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    // ★★★ ここまで ★★★
-
     const res = await client.query("SELECT 1 FROM pilots WHERE email = $1", ['test@example.com']);
     if (res.rowCount === 0) {
       const hash = await bcrypt.hash('password123', 10);

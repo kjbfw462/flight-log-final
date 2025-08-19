@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="/my-profile.html" class="back-link">&lt; プロフィールに戻る</a>
+        <a href="/pilots.html" class="back-link">&lt; 操縦者一覧に戻る</a>
         <h1 id="page-title">操縦者情報</h1>
         <form id="pilot-form">
             <input type="hidden" name="id">
@@ -23,6 +23,7 @@
             <label>住所1（市区町村）<input type="text" name="address1"></label>
             <label>住所2（番地以降）<input type="text" name="address2"></label>
             <label><input type="checkbox" name="has_license" value="true" style="width: auto; margin-right: 8px;">国のライセンスを保有</label>
+
             <h3>パスワード</h3>
             <label>パスワード <span id="password-note"></span>
                 <input type="password" name="password" id="password" autocomplete="new-password">
@@ -30,23 +31,25 @@
              <label>パスワード（確認用）
                 <input type="password" id="password_confirm" autocomplete="new-password">
             </label>
+
             <h3>飛行時間サマリー</h3>
             <label>これまでの総飛行時間 (例: 10時間30分)<input type="text" id="initial_flight_time_str"></label>
             <input type="hidden" name="initial_flight_minutes" id="initial_flight_minutes">
             <label>このアプリで記録されている飛行時間<input type="text" id="app_flight_hours_display" readonly></label>
             <label>総飛行時間<input type="text" id="total_flight_hours_display" readonly></label>
+
             <button type="submit">この内容で保存</button>
         </form>
         <button type="button" id="delete-button" class="red-btn" style="display: none;">この操縦者を削除する</button>
     </div>
     <script>
-        // ... (loadイベントリスナーの中身は変更なし) ...
         const form = document.getElementById('pilot-form');
         const pageTitle = document.getElementById('page-title');
         const deleteButton = document.getElementById('delete-button');
         const params = new URLSearchParams(window.location.search);
         const pilotId = params.get('id');
         let currentUserId = null;
+
         const formatMinutesToHourMinString = (minutes) => {
             if (minutes === null || isNaN(minutes)) return '0時間0分';
             const totalMinutes = Math.round(minutes);
@@ -70,6 +73,7 @@
             const totalMinutes = initialMinutes + appMinutes;
             document.getElementById('total_flight_hours_display').value = formatMinutesToHourMinString(totalMinutes);
         };
+
         window.addEventListener('load', async () => {
             document.getElementById('initial_flight_time_str').addEventListener('input', updateTotalDisplay);
             try {
@@ -77,11 +81,13 @@
                 const userJson = await userRes.json();
                 if (userJson.user) currentUserId = userJson.user.id;
             } catch(e) {}
+
             if (pilotId) {
                 pageTitle.textContent = '操縦者情報の編集';
                 document.getElementById('password').placeholder = '変更する場合のみ入力';
                 document.getElementById('password_confirm').placeholder = '変更する場合のみ入力';
                 deleteButton.style.display = 'block';
+
                 if (parseInt(pilotId, 10) === currentUserId) {
                     deleteButton.disabled = true;
                     deleteButton.title = '自分自身は削除できません';
@@ -126,6 +132,7 @@
             if (!data.password && pilotId) {
                 delete data.password;
             }
+            
             const method = pilotId ? 'PUT' : 'POST';
             const url = pilotId ? `/api/pilots/${pilotId}` : '/api/pilots';
             try {
@@ -135,8 +142,7 @@
                     throw new Error(errData.error || '保存に失敗しました。');
                 }
                 alert('保存しました。');
-                // ★★★ 修正点 2 ★★★
-                window.location.href = '/menu.html';
+                window.location.href = '/pilots.html';
             } catch (err) { alert(err.message); }
         });
 
@@ -149,8 +155,7 @@
                         throw new Error(errData.error || '削除に失敗しました。');
                     }
                     alert('削除しました');
-                    // ★★★ 修正点 3 ★★★
-                    window.location.href = '/menu.html';
+                    window.location.href = '/pilots.html';
                 } catch (err) { alert(err.message); }
             }
         });
