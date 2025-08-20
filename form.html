@@ -1,3 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>飛行日誌</title>
+    <script src="/auth.js" defer></script>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .modal-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff; border-radius: 8px;
+            padding: 2rem; width: 90%; max-width: 400px;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .modal-content h3 { margin-top: 0; }
+        .modal-options { display: flex; flex-direction: column; gap: 0.5rem; }
+        .modal-options button {
+            width: 100%; text-align: left; padding: 0.8em 1em;
+            border: 1px solid #ccc; background-color: #f9f9f9;
+            border-radius: 4px; cursor: pointer;
+        }
+        .modal-options button:hover, .modal-options button:focus { background-color: #eee; outline: 2px solid var(--primary-color); }
+        .modal-overlay.is-open { display: flex; }
+        body.modal-open { overflow: hidden; }
+
+        .pseudo-select {
+            background-color: #fff; cursor: pointer;
+            border: 1px solid var(--border-color);
+            padding: 0.5em 0.75em; border-radius: 4px;
+            width: 100%; box-sizing: border-box;
+            min-height: calc(1em + 1em + 2px); /* font-size + padding + border */
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="/logs.html" class="back-link">&lt; 履歴一覧に戻る</a>
+    <h1 id="page-title">飛行日誌作成</h1>
+    <form id="flight-form">
+      <input type="hidden" name="id">
+      
+      <h3>日常点検（飛行前）</h3>
+      <label>点検年月日: <input type="date" name="precheck_date" required /></label>
+      <label>点検者: <input type="text" name="inspector" required /></label>
+      <label>実施場所: <input type="text" name="place" required /></label>
+      <label>機体全般: <input type="radio" name="body" value="正常" checked required />正常 <input type="radio" name="body" value="異常" required />異常</label>
+      <label>プロペラ: <input type="radio" name="propeller" value="正常" checked required />正常 <input type="radio" name="propeller" value="異常" required />異常</label>
+      <label>フレーム: <input type="radio" name="frame" value="正常" checked required />正常 <input type="radio" name="frame" value="異常" required />異常</label>
+      <label>通信系統: <input type="radio" name="comm" value="正常" checked required />正常 <input type="radio" name="comm" value="異常" required />異常</label>
+      <label>推進系統: <input type="radio" name="engine" value="正常" checked required />正常 <input type="radio" name="engine" value="異常" required />異常</label>
+      <label>電源系統: <input type="radio" name="power" value="正常" checked required />正常 <input type="radio" name="power" value="異常" required />異常</label>
+      <label>自動制御系統: <input type="radio" name="autocontrol" value="正常" checked required />正常 <input type="radio" name="autocontrol" value="異常" required />異常</label>
+      <label>操縦装置: <input type="radio" name="controller" value="正常" checked required />正常 <input type="radio" name="controller" value="異常" required />異常</label>
+      <label>バッテリー・燃料: <input type="radio" name="battery" value="正常" checked required />正常 <input type="radio" name="battery" value="異常" required />異常</label>
+
+      <h3>飛行記録</h3>
+      <label>飛行年月日: <input type="date" name="fly_date" required /></label>
+      <label>機体: <select name="drone_id" id="drone-select" required></select></label>
+      
+      <label>飛行目的:
+        <input type="text" id="purpose-display" class="pseudo-select" placeholder="クリックして選択" readonly>
+        <input type="hidden" name="purpose" id="purpose-hidden">
+      </label>
+      <label>飛行形態:
+        <input type="text" id="flight_form-display" class="pseudo-select" placeholder="クリックして選択" readonly>
+        <input type="hidden" name="flight_form" id="flight_form-hidden">
+      </label>
+
+      <label>離陸場所（住所）: <input type="text" name="start_location" required /></label>
+      <label>着陸場所（住所）: <input type="text" name="end_location" required /></label>
+      
+      <h3>飛行時間</h3>
+      <label>離陸時刻: <input type="time" name="start_time" id="start-time" /></label>
+      <label>着陸時刻: <input type="time" name="end_time" id="end-time" /></label>
+      <label>実飛行時間: <input type="text" id="actual-time-display" readonly /></label>
+      <input type="hidden" name="actual_time_minutes" id="actual-time-minutes">
+
+      <h3>レポート（飛行中の不具合）</h3>
+      <label>飛行中の不具合: <input type="radio" name="flight_abnormal" value="正常" checked required />正常 <input type="radio" name="flight_abnormal" value="異常" required />異常</label>
+
+      <h3>日常点検（飛行後）</h3>
+      <label>飛行後点検: <input type="radio" name="aftercheck" value="正常" checked required />正常 <input type="radio" name="aftercheck" value="異常" required />異常</label>
+
+      <button type="submit">この内容で保存</button>
+    </form>
+    <button type="button" id="delete-button" class="red-btn" style="display: none;">この日誌を削除する</button>
+</div>
+
+<div id="purpose-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="purpose-modal-title">
+    <div class="modal-content">
+        <h3 id="purpose-modal-title">飛行目的を選択</h3>
+        <div class="modal-options">
+            <button type="button" data-value="訓練">訓練</button>
+            <button type="button" data-value="業務">業務</button>
+            <button type="button" data-value="その他">その他</button>
+        </div>
+    </div>
+</div>
+
+<div id="flight_form-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="flight_form-modal-title">
+    <div class="modal-content">
+        <h3 id="flight_form-modal-title">飛行形態を選択</h3>
+        <div class="modal-options">
+            <button type="button" data-value="目視内飛行">目視内飛行</button>
+            <button type="button" data-value="目視外飛行">目視外飛行</button>
+            <button type="button" data-value="夜間飛行">夜間飛行</button>
+            <button type="button" data-value="25kg以上の機体">25kg以上の機体</button>
+            <button type="button" data-value="催し場所上空">催し場所上空</button>
+            <button type="button" data-value="危険物輸送">危険物輸送</button>
+            <button type="button" data-value="物件投下">物件投下</button>
+        </div>
+    </div>
+</div>
+
 <script>
   const form = document.getElementById('flight-form');
   const pageTitle = document.getElementById('page-title');
@@ -16,7 +137,6 @@
   const actualDisplay = document.getElementById('actual-time-display');
   const actualMinutes = document.getElementById('actual-time-minutes');
 
-  // タイムゾーン問題を回避して日付をYYYY-MM-DD形式に変換する関数
   function toDateInputString(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -73,7 +193,6 @@
     });
   }
 
-  // --- モーダル管理 ---
   let activeModal = null, lastFocusedElement = null;
   function openModal(modalId) {
     const modal = document.getElementById(modalId);
@@ -111,7 +230,6 @@
              const radio = form.querySelector(`input[name="${key}"][value="${data[key]}"]`);
              if (radio) radio.checked = true;
            } else if (el.type === 'date') {
-             // ★★★ 日付がズレる問題をここで修正 ★★★
              el.value = toDateInputString(data[key]);
            } else {
              el.value = data[key];
@@ -123,7 +241,6 @@
     calculateFlightTime();
   }
 
-  // --- 初期化とイベントリスナー ---
   window.addEventListener('load', async () => {
     try {
       await populateDrones();
@@ -182,3 +299,5 @@
     }
   });
 </script>
+</body>
+</html>
