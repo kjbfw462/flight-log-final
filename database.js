@@ -1,6 +1,6 @@
-// database.js (最終・完全版)
+// database.js (最終・完全版：一切の省略なし)
 const { Pool } = require('pg');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -86,15 +86,13 @@ async function initializeDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_drones_pilot ON drones(pilot_id)`);
 
     if (process.env.NODE_ENV !== 'production') {
-      const ex = await client.query('SELECT 1 FROM pilots WHERE email=$1', ['test@example.com']);
-      if (ex.rowCount === 0) {
-        const hash = await bcrypt.hash('password123', 10);
-        await client.query(
-          `INSERT INTO pilots (name, email, password, initial_flight_minutes)
-           VALUES ($1,$2,$3,$4)`,
-          ['テスト操縦士', 'test@example.com', hash, 480]
-        );
-      }
+      const hash = await bcrypt.hash('password123', 10);
+      const insertQuery = `
+        INSERT INTO pilots (name, email, password, initial_flight_minutes)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (email) DO NOTHING;
+      `;
+      await client.query(insertQuery, ['テスト操縦士', 'test@example.com', hash, 480]);
     }
 
     await client.query('COMMIT');
