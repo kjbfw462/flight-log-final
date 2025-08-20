@@ -1,15 +1,10 @@
 {
   "name": "flight-log-final",
   "version": "1.0.0",
-  "description": "A web application for managing drone flight logs.",
   "private": true,
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "engines": {
-    "node": "20.x"
-  },
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": "20.x" },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.0.1",
     "bcryptjs": "^2.4.3",
